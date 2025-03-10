@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, FlatList, TouchableHighlight } from 'react-native';
 import { Search, Trash2, Bell, ArrowLeft,Phone,Video } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Swipeable from 'react-native-gesture-handler/Swipeable';
-import { ChatStructure } from '../components/ChatStructure';
+// import Swipeable from 'react-native-gesture-handler/Swipeable';
+import ChatStructure  from '../components/ChatStructure';
 const Chat = () => {
     return (
         <SafeAreaView style={{ flex: 1, backgroundColor: 'black' }}>

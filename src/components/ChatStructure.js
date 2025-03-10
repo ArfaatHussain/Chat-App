@@ -1,49 +1,162 @@
-import React, { useState, useCallback, useEffect } from 'react'
-import { GiftedChat } from 'react-native-gifted-chat'
+import React from 'react';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { useState, useCallback, useEffect } from 'react';
+import {
+  GiftedChat,
+  InputToolbar,
+  Send,
+  Message,
+} from 'react-native-gifted-chat';
+import Icon from 'react-native-vector-icons/Feather';
+import { launchImageLibrary } from 'react-native-image-picker'; // Import image picker
 
-export function ChatStructure() {
-    const [messages, setMessages] = useState([{
+function ChatStructure() {
+  const [messages, setMessages] = useState([]);
+
+  useEffect(() => {
+    setMessages([
+      {
         _id: 1,
-        text: 'Hello developer',
-        createdAt: new Date(),
+        text: 'I have visited this place',
+        createdAt: new Date(Date.UTC(2016, 5, 11, 17, 20, 0)),
         user: {
-            _id: 2,
-            name: 'React Native',
-            avatar: require('../assets/alex.png'),
+          _id: 2,
+          name: 'React Native',
+          avatar:
+            'https://img.freepik.com/free-photo/portrait-smiling-young-man-rubbing-his-hands_171337-10297.jpg',
         },
-    },])
+        image:
+          'https://media.istockphoto.com/id/517188688/photo/mountain-landscape.jpg?s=1024x1024&w=0&k=20&c=z8_rWaI8x4zApNEEG9DnWlGXyDIXe-OmsAyQ5fGPVV8=',
+      },
+    ]);
+  }, []);
 
-    useEffect(() => {
-        console.log(messages);
-        setMessages([
-            {
-                _id: 2,
-                text: 'Hello developer',
-                createdAt: new Date(),
-                user: {
-                    _id: 3,
-                    name: 'React Native',
-                    avatar: 'https://placeimg.com/140/140/any',
-                },
-            },
-        ])
-    }, [])
+  const onSend = useCallback((messages = []) => {
+    setMessages((previousMessages) =>
+      GiftedChat.append(previousMessages, messages)
+    );
+  }, []);
 
-    const onSend = useCallback((messages = []) => {
-        setMessages(previousMessages =>
-            GiftedChat.append(previousMessages, messages),
-        )
-    }, [])
+  const handleImagePicker = () => {
+    // Open the gallery to pick an image
+    launchImageLibrary({ mediaType: 'photo', quality: 0.5 }, (response) => {
+      if (response.didCancel) {
+        console.log('User cancelled image picker');
+      } else if (response.errorMessage) {
+        console.log('ImagePicker Error: ', response.errorMessage);
+      } else {
+        const { uri } = response.assets[0];
+        const imageMessage = {
+          _id: Math.random(),
+          text: '',
+          createdAt: new Date(),
+          user: {
+            _id: 1,
+          },
+          image: uri, // Add the image URI here
+        };
+        onSend([imageMessage]); // Send the image as a message
+      }
+    });
+  };
 
-    return (
-        <GiftedChat
-            messages={messages}
-            onSend={messages => onSend(messages)}
-            user={{
-                _id: 1,
-            }}
-            //   messageContainerRef={}
-            placeholder="Type a message..."
+  return (
+    <GiftedChat
+      messages={messages}
+      onSend={(messages) => onSend(messages)}
+      user={{
+        _id: 1,
+      }}
+      renderInputToolbar={(props) => (
+        <InputToolbar {...props} containerStyle={styles.inputToolbar} />
+      )}
+      renderSend={(props) => (
+        <Send {...props}>
+          <View style={styles.sendButton}>
+            <Icon name="send" size={18} color="white" />
+          </View>
+        </Send>
+      )}
+      renderMessage={(props) => (
+        <Message
+          {...props}
+          containerStyle={styles.messageContainer}
+          bubbleStyle={styles.messageBubble}
+          textStyle={styles.textMessage}
         />
-    )
+      )}
+      textInputProps={{
+        placeholder: 'Type message here...',
+        placeholderTextColor: 'lightgrey',
+      }}
+      textInputStyle={styles.textInput}
+      renderChatFooter={() => (
+        <View style={styles.chatFooter}>
+          <TouchableOpacity onPress={handleImagePicker}>
+            <Icon
+              name="image"
+              size={20}
+              color="black"
+              style={styles.imagePicker}
+            />
+          </TouchableOpacity>
+        </View>
+      )}
+    />
+  );
 }
+
+const styles = StyleSheet.create({
+  inputToolbar: {
+    backgroundColor: 'grey',
+    borderTopRightRadius: 25,
+    borderTopLeftRadius: 25,
+    marginTop: 10,
+    paddingBottom: 5,
+    flexDirection: 'row', // Align children horizontally (input and icon)
+    alignItems: 'center', // Vertically center elements
+  },
+  sendButton: {
+    marginRight: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100%',
+    width: 30,
+    marginBottom: 10,
+  },
+  textInput: {
+    color: 'white',
+    flex: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    fontSize: 16,
+  },
+  messageContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 5,
+  },
+  messageBubble: {
+    maxWidth: '50%',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 15,
+    backgroundColor: '#0078FF',
+    marginBottom: 5,
+  },
+  textMessage: {
+    color: 'white',
+    flexWrap: 'wrap',
+    flexShrink: 1,
+  },
+  imagePicker: {
+    marginLeft: 10, // Add left margin to space it out from the input
+  },
+  chatFooter: {
+    flexDirection: 'row', // Align footer items horizontally
+    alignItems: 'center',
+    paddingHorizontal: 10, // Add padding for space
+  },
+});
+
+export default ChatStructure;
