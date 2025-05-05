@@ -19,6 +19,12 @@
       },
       "package": "com.anonymous.ChatApp"
     },
-    "web": {}
+    "web": {},
+    "extra": {
+      "eas": {
+        "projectId": "e2a351ea-6b5c-4f54-a40d-7d91c7b66c10"
+      }
+    },
+    "owner": "arfaat_hussain"
   }
 }

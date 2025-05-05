@@ -68,12 +68,21 @@ function ChatStructure() {
         _id: 1,
       }}
       renderInputToolbar={(props) => (
-        <InputToolbar {...props} containerStyle={styles.inputToolbar} />
+        <InputToolbar {...props} containerStyle={styles.inputToolbar} 
+
+
+        renderActions={()=>(
+          <TouchableOpacity onPress={handleImagePicker} style={styles.imagePicker}>
+              <Icon name="image" size={25} color="white" />
+            </TouchableOpacity>
+        )}
+        
+        />
       )}
       renderSend={(props) => (
         <Send {...props}>
           <View style={styles.sendButton}>
-            <Icon name="send" size={18} color="white" />
+            <Icon name="send" size={25} color="white" />
           </View>
         </Send>
       )}
@@ -85,23 +94,17 @@ function ChatStructure() {
           textStyle={styles.textMessage}
         />
       )}
-      textInputProps={{
+
+      
+        textInputProps={{
         placeholder: 'Type message here...',
         placeholderTextColor: 'lightgrey',
       }}
+
       textInputStyle={styles.textInput}
-      renderChatFooter={() => (
-        <View style={styles.chatFooter}>
-          <TouchableOpacity onPress={handleImagePicker}>
-            <Icon
-              name="image"
-              size={20}
-              color="black"
-              style={styles.imagePicker}
-            />
-          </TouchableOpacity>
-        </View>
-      )}
+      
+      
+      
     />
   );
 }
@@ -113,16 +116,16 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 25,
     marginTop: 10,
     paddingBottom: 5,
-    flexDirection: 'row', // Align children horizontally (input and icon)
-    alignItems: 'center', // Vertically center elements
+    flexDirection: 'row',
+    alignItems: 'center', 
   },
   sendButton: {
-    marginRight: 10,
+    // marginRight: 10,
     justifyContent: 'center',
     alignItems: 'center',
     height: '100%',
-    width: 30,
-    marginBottom: 10,
+    width: 30,  
+    marginRight:10
   },
   textInput: {
     color: 'white',
@@ -150,13 +153,11 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   imagePicker: {
-    marginLeft: 10, // Add left margin to space it out from the input
-  },
-  chatFooter: {
-    flexDirection: 'row', // Align footer items horizontally
-    alignItems: 'center',
-    paddingHorizontal: 10, // Add padding for space
-  },
+    marginLeft: 10,
+    position:'relative',
+    top:-10,
+    left:5
+  }
 });
 
 export default ChatStructure;
