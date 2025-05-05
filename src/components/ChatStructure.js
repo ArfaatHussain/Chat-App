@@ -1,14 +1,9 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { useState, useCallback, useEffect } from 'react';
-import {
-  GiftedChat,
-  InputToolbar,
-  Send,
-  Message,
-} from 'react-native-gifted-chat';
+import { GiftedChat, InputToolbar, Send, Message } from 'react-native-gifted-chat';
 import Icon from 'react-native-vector-icons/Feather';
-import { launchImageLibrary } from 'react-native-image-picker'; // Import image picker
+import * as ImagePicker from 'expo-image-picker';
 
 function ChatStructure() {
   const [messages, setMessages] = useState([]);
@@ -37,27 +32,32 @@ function ChatStructure() {
     );
   }, []);
 
-  const handleImagePicker = () => {
-    // Open the gallery to pick an image
-    launchImageLibrary({ mediaType: 'photo', quality: 0.5 }, (response) => {
-      if (response.didCancel) {
-        console.log('User cancelled image picker');
-      } else if (response.errorMessage) {
-        console.log('ImagePicker Error: ', response.errorMessage);
-      } else {
-        const { uri } = response.assets[0];
-        const imageMessage = {
-          _id: Math.random(),
-          text: '',
-          createdAt: new Date(),
-          user: {
-            _id: 1,
-          },
-          image: uri, // Add the image URI here
-        };
-        onSend([imageMessage]); // Send the image as a message
-      }
+  const handleImagePicker = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: false,
+      quality: 1,
     });
+
+    console.log(result); // Log the result
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const imageMessage = {
+        _id: Math.random(),
+        text: '',
+        createdAt: new Date(),
+        user: {
+          _id: 1,
+        },
+        image: result.assets[0].uri, // Get the URI from the result
+      };
+
+      console.log(imageMessage); // Log the image message
+
+      onSend([imageMessage]); // Send the image as a message
+    } else {
+      console.log('User cancelled image picker');
+    }
   };
 
   return (
@@ -68,15 +68,14 @@ function ChatStructure() {
         _id: 1,
       }}
       renderInputToolbar={(props) => (
-        <InputToolbar {...props} containerStyle={styles.inputToolbar} 
-
-
-        renderActions={()=>(
-          <TouchableOpacity onPress={handleImagePicker} style={styles.imagePicker}>
-              <Icon name="image" size={25} color="white" />
+        <InputToolbar
+          {...props}
+          containerStyle={styles.inputToolbar}
+          renderActions={() => (
+            <TouchableOpacity onPress={handleImagePicker} style={styles.imagePicker}>
+              <Icon name="image" size={28} color="white" />
             </TouchableOpacity>
-        )}
-        
+          )}
         />
       )}
       renderSend={(props) => (
@@ -92,19 +91,26 @@ function ChatStructure() {
           containerStyle={styles.messageContainer}
           bubbleStyle={styles.messageBubble}
           textStyle={styles.textMessage}
+          renderMessageImage={(imageProps) => {
+            const imageUri = imageProps.currentMessage.image;
+            console.log("Rendering image with URI: ", imageUri); // Log the URI
+
+            return (
+              <View style={styles.messageImageContainer}>
+                <Image
+                  source={{ uri: imageUri }} // Ensure the URI is passed correctly
+                  style={styles.imageMessage}
+                />
+              </View>
+            );
+          }}
         />
       )}
-
-      
-        textInputProps={{
+      textInputProps={{
         placeholder: 'Type message here...',
         placeholderTextColor: 'lightgrey',
       }}
-
       textInputStyle={styles.textInput}
-      
-      
-      
     />
   );
 }
@@ -117,15 +123,14 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingBottom: 5,
     flexDirection: 'row',
-    alignItems: 'center', 
+    alignItems: 'center',
   },
   sendButton: {
-    // marginRight: 10,
     justifyContent: 'center',
     alignItems: 'center',
     height: '100%',
-    width: 30,  
-    marginRight:10
+    width: 30,
+    marginRight: 10,
   },
   textInput: {
     color: 'white',
@@ -154,10 +159,20 @@ const styles = StyleSheet.create({
   },
   imagePicker: {
     marginLeft: 10,
-    position:'relative',
-    top:-10,
-    left:5
-  }
+    position: 'relative',
+    top: -10,
+    left: 5,
+  },
+  messageImageContainer: {
+    borderRadius: 15,
+    overflow: 'hidden',
+  },
+  imageMessage: {
+    width: 150,
+    height: 150,
+    borderRadius: 15,
+    marginBottom: 5,
+  },
 });
 
 export default ChatStructure;
