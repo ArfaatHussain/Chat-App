@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, SafeAreaView, Image, TextInput, TouchableOpacit
 import { User, Eye, EyeOff } from 'lucide-react-native';
 import Btn from '../components/Btn';
 
-function Login() {
+function Login(props) {
   const [hidePassword, setHidePassword] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -28,7 +28,7 @@ function Login() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={{ alignItems: 'center', marginTop: 30 }}>
         <Text style={{ color: 'white', fontSize: 34, fontWeight: '600' }}>Login to Chatbox</Text>
         <Text style={{ color: '#797C7B', marginTop: 20, textAlign: 'center', paddingHorizontal: 26, fontSize: 16 }}>
@@ -75,44 +75,21 @@ function Login() {
         onPress={authenticateUser}
       />
 
-      {/* Social Media Accounts Login Buttons */}
-      <View style={styles.loginBtnContainer}>
-        <View
-          style={{
-            borderColor: 'white',
-            borderWidth: 1,
-            borderRadius: 40,
-            paddingVertical: 10,
-            paddingHorizontal: 10,
-          }}
+      <View
+        style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 28 }}
+      >
+        <Text style={{ color: 'white', fontSize: 16 }} >Don't have an account?   </Text>
+        <TouchableOpacity
+        style={{marginLeft:-10}}
+        onPress={()=> props.navigation.navigate('Signup')}
         >
-          <Image source={require('../assets/AppleLogo.png')} style={[styles.logoImg, { tintColor: 'white' }]} />
-        </View>
-
-        <View
-          style={{
-            borderColor: 'white',
-            borderWidth: 1,
-            borderRadius: 40,
-            paddingVertical: 10,
-            paddingHorizontal: 10,
-          }}
-        >
-          <Image source={require('../assets/FacebookLogo.png')} style={styles.logoImg} />
-        </View>
-
-        <View
-          style={{
-            borderColor: 'white',
-            borderWidth: 1,
-            borderRadius: 40,
-            padding: 10,
-          }}
-        >
-          <Image source={require('../assets/GoogleLogo.png')} style={styles.logoImg} />
-        </View>
+          <Text style={{ color: 'orange', fontSize: 18 }} > Sign up </Text>
+        </TouchableOpacity>
       </View>
-    </SafeAreaView>
+
+
+
+    </View>
   );
 }
 
@@ -143,7 +120,8 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     color: 'white',
-    fontSize: 17,
+    fontSize: 16,
+    height: 60
   },
   logoImg: {
     height: 30,

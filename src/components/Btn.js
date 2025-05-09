@@ -4,19 +4,11 @@ import { useState } from 'react';
 
 const Btn = (props) => {
 
-    const loginIndicatorStyle = props.loginIndicatorStyle
-
-
     return (
-        <TouchableOpacity style={[props.style, styles.btn,loginIndicatorStyle]}
+        <TouchableOpacity style={[props.style, styles.btn]}
             activeOpacity={0.7}
             onPress={props.onPress }
             >
-                {
-                    props.loginIndicator?
-                    <Indicator style={{paddingRight:40}} />
-                    :null
-                }
             <Text style={[styles.btnText]}>{props.text}</Text>
         </TouchableOpacity>
     )

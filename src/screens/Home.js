@@ -104,7 +104,7 @@ const Home = () => {
     }
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={styles.container}>
             {/* Header */}
             <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20 }}>
                 <Search color={'white'} size={25} />
@@ -136,7 +136,7 @@ const Home = () => {
                     <Text>No Chats Yet</Text>
                 )}
             </View>
-        </SafeAreaView>
+        </View>
     );
 };
 

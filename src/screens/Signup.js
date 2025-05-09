@@ -2,44 +2,37 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Image, TextInput, TouchableOpacity } from 'react-native';
 import { User, Eye, EyeOff } from 'lucide-react-native';
 import Btn from '../components/Btn';
-// import { auth } from '../../firebaseConfig';
-// import { createUserWithEmailAndPassword } from 'firebase/auth'; // Import Firebase signup method
-
-function Signup() {
+import { API_URL } from '../Constant';
+import Toast from 'react-native-simple-toast';
+function Signup(props) {
   const [hidePassword, setHidePassword] = useState(true);
   const [hideConfirmPassword, setHideConfirmPassword] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [signupIndicator, setSignupIndicator] = useState(false);
-  const [errorMessage, setErrorMessage] = useState(''); // For showing signup errors
+  const [showLoader, setShowLoader] = useState(false);
 
   // Function to authenticate user via Firebase Authentication (Signup)
   const authenticateUser = async () => {
-    setSignupIndicator(true);
-    setErrorMessage(''); // Clear any previous error messages
+    setShowLoader(true);
 
     // Check if passwords match
     if (password !== confirmPassword) {
-      setSignupIndicator(false);
-      setErrorMessage('Passwords do not match');
+      setShowLoader(false);
       return;
     }
 
     try {
-      // Create a new user with Firebase Authentication
-      // await createUserWithEmailAndPassword(auth, email, password);
-      setSignupIndicator(false);
-      // Handle successful signup (Navigate to the next screen, etc.)
+      setShowLoader(false);
       console.log('User signed up successfully');
     } catch (error) {
-      setSignupIndicator(false);
-      setErrorMessage(error.message); // Display error message if signup fails
+      setShowLoader(false);
+      Toast.show("Error: ", error.message);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <View style={{ alignItems: 'center', marginTop: 30 }}>
         <Text style={{ color: 'white', fontSize: 34, fontWeight: '600' }}>Create Account</Text>
         <Text style={{ color: '#797C7B', marginTop: 20, textAlign: 'center', paddingHorizontal: 26, fontSize: 16 }}>
@@ -86,57 +79,24 @@ function Signup() {
         </TouchableOpacity>
       </View>
 
-      {/* Display error message if signup fails */}
-      {errorMessage ? (
-        <Text style={{ color: 'red', textAlign: 'center', marginBottom: 10 }}>{errorMessage}</Text>
-      ) : null}
-
       <Btn
         text={'Sign Up'}
         style={{ marginVertical: 20 }}
-        loginIndicator={signupIndicator}
-        loginIndicatorStyle={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
         onPress={authenticateUser}
       />
 
-      {/* Social Media Accounts Signup Buttons */}
-      <View style={styles.loginBtnContainer}>
-        <View
-          style={{
-            borderColor: 'white',
-            borderWidth: 1,
-            borderRadius: 40,
-            paddingVertical: 10,
-            paddingHorizontal: 10,
-          }}
+      <View
+        style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 28 }}
+      >
+        <Text style={{ color: 'white', fontSize: 16 }} >Already have a account?   </Text>
+        <TouchableOpacity
+          style={{ marginLeft: -10 }}
+          onPress={() => props.navigation.navigate('Login')}
         >
-          <Image source={require('../assets/AppleLogo.png')} style={[styles.logoImg, { tintColor: 'white' }]} />
-        </View>
-
-        <View
-          style={{
-            borderColor: 'white',
-            borderWidth: 1,
-            borderRadius: 40,
-            paddingVertical: 10,
-            paddingHorizontal: 10,
-          }}
-        >
-          <Image source={require('../assets/FacebookLogo.png')} style={styles.logoImg} />
-        </View>
-
-        <View
-          style={{
-            borderColor: 'white',
-            borderWidth: 1,
-            borderRadius: 40,
-            padding: 10,
-          }}
-        >
-          <Image source={require('../assets/GoogleLogo.png')} style={styles.logoImg} />
-        </View>
+          <Text style={{ color: 'orange', fontSize: 18 }} > Login</Text>
+        </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -167,7 +127,8 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     color: 'white',
-    fontSize: 17,
+    fontSize: 16,
+    height: 60
   },
   logoImg: {
     height: 30,

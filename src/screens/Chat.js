@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import ChatStructure from '../components/ChatStructure';
 const Chat = () => {
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: 'black' }}>
+        <View style={{ flex: 1, backgroundColor: 'black' }}>
 
             <View
                 style={styles.header}
@@ -50,7 +50,7 @@ const Chat = () => {
 
             <ChatStructure />
 
-        </SafeAreaView>
+        </View>
     )
 }
 
