@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useState, useCallback, useEffect } from 'react';
 import { GiftedChat, InputToolbar, Send, Message } from 'react-native-gifted-chat';
 import Icon from 'react-native-vector-icons/Feather';
@@ -8,25 +8,41 @@ import * as ImagePicker from 'expo-image-picker';
 function ChatStructure() {
   const [messages, setMessages] = useState([]);
 
-  useEffect(() => {
-    setMessages([
-      {
-        _id: 1,
-        text: 'I have visited this place',
-        createdAt: new Date(Date.UTC(2016, 5, 11, 17, 20, 0)),
-        user: {
-          _id: 2,
-          name: 'React Native',
-          avatar:
-            'https://img.freepik.com/free-photo/portrait-smiling-young-man-rubbing-his-hands_171337-10297.jpg',
-        },
-        image:
-          'https://media.istockphoto.com/id/517188688/photo/mountain-landscape.jpg?s=1024x1024&w=0&k=20&c=z8_rWaI8x4zApNEEG9DnWlGXyDIXe-OmsAyQ5fGPVV8=',
-      },
-    ]);
-  }, []);
+  // useEffect(() => {
+  //   const unsubscribe = db.collection('messages')
+  //     .orderBy('createdAt', 'desc')
+  //     .onSnapshot(snapshot => {
+  //       const fetchedMessages = snapshot.docs.map(doc => {
+  //         const data = doc.data();
+  //         return {
+  //           _id: doc.id,
+  //           text: data.text,
+  //           createdAt: data.createdAt.toDate(),
+  //           user: {
+  //             _id: data.userId,
+  //             name: data.userName,
+  //             avatar: data.userAvatar,
+  //           },
+  //           image: data.image || null,
+  //         };
+  //       });
+  //       setMessages(fetchedMessages.reverse());
+  //     });
+
+  //   return () => unsubscribe();
+  // }, []);
 
   const onSend = useCallback((messages = []) => {
+    // Add message to Firestore
+    const message = messages[0];
+    db.collection('messages').add({
+      text: message.text || '',
+      createdAt: new Date(),
+      userId: message.user._id,
+      userName: message.user.name,
+      userAvatar: message.user.avatar,
+      image: message.image || null,
+    });
     setMessages((previousMessages) =>
       GiftedChat.append(previousMessages, messages)
     );
@@ -39,8 +55,6 @@ function ChatStructure() {
       quality: 1,
     });
 
-    console.log(result); // Log the result
-
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const imageMessage = {
         _id: Math.random(),
@@ -49,10 +63,8 @@ function ChatStructure() {
         user: {
           _id: 1,
         },
-        image: result.assets[0].uri, // Get the URI from the result
+        image: result.assets[0].uri,
       };
-
-      console.log(imageMessage); // Log the image message
 
       onSend([imageMessage]); // Send the image as a message
     } else {
@@ -93,12 +105,10 @@ function ChatStructure() {
           textStyle={styles.textMessage}
           renderMessageImage={(imageProps) => {
             const imageUri = imageProps.currentMessage.image;
-            console.log("Rendering image with URI: ", imageUri); // Log the URI
-
             return (
               <View style={styles.messageImageContainer}>
                 <Image
-                  source={{ uri: imageUri }} // Ensure the URI is passed correctly
+                  source={{ uri: imageUri }}
                   style={styles.imageMessage}
                 />
               </View>

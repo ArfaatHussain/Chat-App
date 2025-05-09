@@ -1,0 +1,1 @@
+export const API_URL = 'https://chat-app-4a38e-default-rtdb.firebaseio.com';
