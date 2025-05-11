@@ -187,7 +187,10 @@ const Home = ({ navigation, route }) => {
             </View>
 
             <View style={{ backgroundColor: 'grey', marginTop: 20, marginHorizontal: 15, flexDirection: 'row', alignItems: 'center', height: 55, paddingHorizontal: 15, borderRadius: 12 }}>
-                <TextInput style={{ flex: 1, color: 'white' }} placeholder='Search' placeholderTextColor={'white'} />
+                <TextInput style={{ flex: 1, color: 'white' }} placeholder='Search' placeholderTextColor={'white'} 
+                value={search}
+                onChangeText={setSearch}
+                />
                 <Search color={'white'} size={25} />
             </View>
 
