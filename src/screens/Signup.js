@@ -1,9 +1,15 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Image, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { User, Eye, EyeOff } from 'lucide-react-native';
 import Btn from '../components/Btn';
 import { API_URL } from '../Constant';
 import Toast from 'react-native-simple-toast';
+import axios from 'axios';
+import uuid from 'react-native-uuid';
+import TransparentLoader from '../components/TransparentLoader';
+import { getDatabase, ref, get, set } from 'firebase/database';  // Import necessary Firebase functions
+import { db } from '../../config';
+
 function Signup(props) {
   const [hidePassword, setHidePassword] = useState(true);
   const [hideConfirmPassword, setHideConfirmPassword] = useState(true);
@@ -11,91 +17,178 @@ function Signup(props) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showLoader, setShowLoader] = useState(false);
+  const [name, setName] = useState('');
+  const [about, setAbout] = useState('');
 
-  // Function to authenticate user via Firebase Authentication (Signup)
-  const authenticateUser = async () => {
-    setShowLoader(true);
+  const generateUserId = () => {
+    return uuid.v4();
+  };
 
-    // Check if passwords match
+  const isValidInput = () => {
+    if (!email) {
+      Toast.show("Email is required");
+      return false;
+    }
+    if (!password) {
+      Toast.show("Password is required");
+      return false;
+    }
+    if (!confirmPassword) {
+      Toast.show("Confirm password is required");
+      return false;
+    }
     if (password !== confirmPassword) {
-      setShowLoader(false);
+      Toast.show("Password does not match with confirm password");
+      return false;
+    }
+    if (!about) {
+      Toast.show("About is required");
+      return false;
+    }
+    return true;
+  };
+
+  const checkEmailExists = async () => {
+    try {
+      const userRef = ref(db, 'users');
+      const snapshot = await get(userRef);
+      const users = snapshot.val();
+      for (const key in users) {
+        if (users[key].email === email) {
+          return true;
+        }
+      }
+      return false;
+    } catch (error) {
+      console.error("Error checking email: ", error);
+      return false;
+    }
+  };
+  const handleSignup = async () => {
+    if (!isValidInput()) {
       return;
     }
-
     try {
+      setShowLoader(true);
+
+      const emailExists = await checkEmailExists();
+      if (emailExists) {
+        Toast.show("Email already exists");
+        setShowLoader(false);
+        return;
+      }
+
+      // Create user object
+      const requestBody = {
+        id: generateUserId(),
+        name: name,
+        email: email,
+        password: password,
+        chats: [],
+        image: 'https://www.pngall.com/wp-content/uploads/5/Profile-PNG-File.png',
+        about: about,
+      };
+
+      // Save the new user to Firebase Realtime Database
+      const newUserRef = ref(db, 'users/' + requestBody.id);
+      await set(newUserRef, requestBody);
+
       setShowLoader(false);
-      console.log('User signed up successfully');
+      Toast.show("Account created successfully");
+      props.navigation.navigate('Login');
     } catch (error) {
+      console.error("Error creating account: ", error);
       setShowLoader(false);
-      Toast.show("Error: ", error.message);
+      Toast.show("Error: " + error.message);
     }
   };
 
   return (
-    <View style={styles.container}>
-      <View style={{ alignItems: 'center', marginTop: 30 }}>
-        <Text style={{ color: 'white', fontSize: 34, fontWeight: '600' }}>Create Account</Text>
-        <Text style={{ color: '#797C7B', marginTop: 20, textAlign: 'center', paddingHorizontal: 26, fontSize: 16 }}>
-          Join us today! Sign up with your email and password to get started
-        </Text>
-      </View>
+    <View
+      style={styles.container}
+    >
+      <ScrollView contentContainerStyle={styles.contentContainer}>
+        <View style={styles.header}>
+          <Text style={styles.headerText}>Create Account</Text>
+          <Text style={styles.subHeaderText}>
+            Join us today! Sign up with your email and password to get started
+          </Text>
+        </View>
 
-      <View style={[styles.inputBox, { marginTop: 25 }]}>
-        <TextInput
-          placeholder="Enter Email"
-          value={email}
-          onChangeText={(text) => setEmail(text)}
-          style={styles.input}
-          placeholderTextColor={'grey'}
-        />
-        <User size={24} color={'grey'} />
-      </View>
+        <View style={[styles.inputBox, { marginTop: 25 }]}>
+          <TextInput
+            placeholder="Enter name"
+            value={name}
+            onChangeText={setName}
+            style={styles.input}
+            placeholderTextColor={'grey'}
+          />
+        </View>
 
-      <View style={[styles.inputBox, { marginTop: 10 }]}>
-        <TextInput
-          placeholder="Enter Password"
-          value={password}
-          onChangeText={(text) => setPassword(text)}
-          secureTextEntry={hidePassword}
-          style={styles.input}
-          placeholderTextColor={'grey'}
-        />
-        <TouchableOpacity onPress={() => setHidePassword(!hidePassword)} style={{ justifyContent: 'center' }}>
-          {!hidePassword ? <Eye size={24} color={'grey'} /> : <EyeOff size={24} color={'grey'} />}
-        </TouchableOpacity>
-      </View>
+        <View style={[styles.inputBox, { marginTop: 25 }]}>
+          <TextInput
+            placeholder="Enter email"
+            value={email}
+            onChangeText={(text) => setEmail(text)}
+            style={styles.input}
+            placeholderTextColor={'grey'}
+          />
+          <User size={24} color={'grey'} />
+        </View>
 
-      <View style={[styles.inputBox, { marginTop: 10 }]}>
-        <TextInput
-          placeholder="Confirm Password"
-          value={confirmPassword}
-          onChangeText={(text) => setConfirmPassword(text)}
-          secureTextEntry={hideConfirmPassword}
-          style={styles.input}
-          placeholderTextColor={'grey'}
-        />
-        <TouchableOpacity onPress={() => setHideConfirmPassword(!hideConfirmPassword)} style={{ justifyContent: 'center' }}>
-          {!hideConfirmPassword ? <Eye size={24} color={'grey'} /> : <EyeOff size={24} color={'grey'} />}
-        </TouchableOpacity>
-      </View>
+        <View style={[styles.inputBox, { marginTop: 10 }]}>
+          <TextInput
+            placeholder="Enter password"
+            value={password}
+            onChangeText={(text) => setPassword(text)}
+            secureTextEntry={hidePassword}
+            style={styles.input}
+            placeholderTextColor={'grey'}
+          />
+          <TouchableOpacity onPress={() => setHidePassword(!hidePassword)} style={styles.eyeIcon}>
+            {!hidePassword ? <Eye size={24} color={'grey'} /> : <EyeOff size={24} color={'grey'} />}
+          </TouchableOpacity>
+        </View>
 
-      <Btn
-        text={'Sign Up'}
-        style={{ marginVertical: 20 }}
-        onPress={authenticateUser}
-      />
+        <View style={[styles.inputBox, { marginTop: 10 }]}>
+          <TextInput
+            placeholder="Confirm password"
+            value={confirmPassword}
+            onChangeText={(text) => setConfirmPassword(text)}
+            secureTextEntry={hideConfirmPassword}
+            style={styles.input}
+            placeholderTextColor={'grey'}
+          />
+          <TouchableOpacity onPress={() => setHideConfirmPassword(!hideConfirmPassword)} style={styles.eyeIcon}>
+            {!hideConfirmPassword ? <Eye size={24} color={'grey'} /> : <EyeOff size={24} color={'grey'} />}
+          </TouchableOpacity>
+        </View>
 
-      <View
-        style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 28 }}
-      >
-        <Text style={{ color: 'white', fontSize: 16 }} >Already have a account?   </Text>
-        <TouchableOpacity
-          style={{ marginLeft: -10 }}
-          onPress={() => props.navigation.navigate('Login')}
-        >
-          <Text style={{ color: 'orange', fontSize: 18 }} > Login</Text>
-        </TouchableOpacity>
-      </View>
+        <View style={[styles.inputBox, { marginTop: 25 }]}>
+          <TextInput
+            placeholder="Enter about"
+            value={about}
+            onChangeText={setAbout}
+            style={styles.input}
+            placeholderTextColor={'grey'}
+          />
+        </View>
+
+        <Btn text={'Sign Up'} style={styles.button} onPress={handleSignup} />
+
+        <View style={styles.loginLink}>
+          <Text style={styles.loginText}>Already have an account? </Text>
+          <TouchableOpacity onPress={() => props.navigation.navigate('Login')}>
+            <Text style={styles.loginLinkText}>Login</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+
+      {
+        showLoader ?
+          <TransparentLoader isVisible={true} message={"Creating Account..."} />
+          : null
+      }
     </View>
   );
 }
@@ -106,7 +199,26 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'black',
-    paddingVertical: 30,
+  },
+  contentContainer: {
+    flex: 1,
+    paddingHorizontal: 25,
+    paddingVertical: 20,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  headerText: {
+    color: 'white',
+    fontSize: 34,
+    fontWeight: '600',
+  },
+  subHeaderText: {
+    color: '#797C7B',
+    marginTop: 20,
+    textAlign: 'center',
+    fontSize: 16,
   },
   inputBox: {
     paddingHorizontal: 10,
@@ -114,25 +226,33 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: 'white',
-    marginHorizontal: 25,
     paddingVertical: 5,
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  loginBtnContainer: {
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'space-around',
   },
   input: {
     flex: 1,
     color: 'white',
     fontSize: 16,
-    height: 60
+    height: 60,
   },
-  logoImg: {
-    height: 30,
-    width: 30,
-    resizeMode: 'contain',
+  eyeIcon: {
+    justifyContent: 'center',
+  },
+  button: {
+    marginVertical: 20,
+  },
+  loginLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loginText: {
+    color: 'white',
+    fontSize: 16,
+  },
+  loginLinkText: {
+    color: 'orange',
+    fontSize: 18,
   },
 });

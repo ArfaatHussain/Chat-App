@@ -2,28 +2,77 @@ import { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Image, TextInput, TouchableOpacity } from 'react-native';
 import { User, Eye, EyeOff } from 'lucide-react-native';
 import Btn from '../components/Btn';
-
+import { API_URL } from '../Constant';
+import axios from 'axios';
+import Toast from 'react-native-simple-toast';
+import TransparentLoader from '../components/TransparentLoader';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getDatabase, ref, get } from 'firebase/database';
+import { db } from '../../config'
 function Login(props) {
   const [hidePassword, setHidePassword] = useState(true);
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loginIndicator, setLoginIndicator] = useState(false);
-  const [errorMessage, setErrorMessage] = useState(''); // For showing login errors
+  const [showLoader, setShowLoader] = useState(false);
 
-  // Function to authenticate user using Firebase Authentication
-  const authenticateUser = async () => {
-    setLoginIndicator(true);
-    setErrorMessage(''); // Clear any previous error messages
+  const isValidInput = () => {
+    if (!email) {
+      Toast.show("Email is required");
+      return false;
+    }
+    if (!password) {
+      Toast.show("Password is required");
+      return false;
+    }
 
+    return true;
+  };
+
+  const handleLogin = async () => {
+    if (!isValidInput()) {
+      return;
+    }
     try {
-      // Sign in with Firebase Authentication
-      // await signInWithEmailAndPassword(auth, username, password);
-      setLoginIndicator(false);
-      // Handle successful login (Navigate to the next screen, etc.)
-      console.log('User signed in');
+      setShowLoader(true);
+      const userRef = ref(db, 'users');
+      const snapshot = await get(userRef);
+      console.log("Snapshot: ", snapshot);
+      if (snapshot.exists()) {
+        const users = snapshot.val();
+        let matchedUser = null;
+
+        for (const key in users) {
+          if (users[key].email.toLowerCase() === email.toLowerCase()) {
+            matchedUser = users[key];
+            break;
+          }
+        }
+
+        if (matchedUser == null) {
+          Toast.show("User not found");
+          setShowLoader(false);
+          return;
+        }
+
+        if (matchedUser.password === password) {
+          setShowLoader(false);
+          await AsyncStorage.setItem('user', JSON.stringify(matchedUser));
+          Toast.show("Login successful");
+          props.navigation.navigate('Home');
+        } else {
+          Toast.show("Invalid email or password");
+          setShowLoader(false);
+        }
+      }
+      else {
+        Toast.show("No user found");
+        setShowLoader(false);
+      }
+
     } catch (error) {
-      setLoginIndicator(false);
-      setErrorMessage(error.message); // Display error message if authentication fails
+      console.error("Error occurred during login: ", error);
+      setShowLoader(false);
+      Toast.show("Error: " + error.message);
     }
   };
 
@@ -32,15 +81,15 @@ function Login(props) {
       <View style={{ alignItems: 'center', marginTop: 30 }}>
         <Text style={{ color: 'white', fontSize: 34, fontWeight: '600' }}>Login to Chatbox</Text>
         <Text style={{ color: '#797C7B', marginTop: 20, textAlign: 'center', paddingHorizontal: 26, fontSize: 16 }}>
-          Welcome back! Sign in using your social account or email to continue with us
+          Welcome back! Sign in using your email to continue with us
         </Text>
       </View>
 
       <View style={[styles.inputBox, { marginTop: 25 }]}>
         <TextInput
-          placeholder="Enter Username"
-          value={username}
-          onChangeText={(text) => setUsername(text)}
+          placeholder="Enter email"
+          value={email}
+          onChangeText={setEmail}
           style={styles.input}
           placeholderTextColor={'grey'}
         />
@@ -62,17 +111,11 @@ function Login(props) {
         </TouchableOpacity>
       </View>
 
-      {/* Display error message if login fails */}
-      {errorMessage ? (
-        <Text style={{ color: 'red', textAlign: 'center', marginBottom: 10 }}>{errorMessage}</Text>
-      ) : null}
-
       <Btn
         text={'Login'}
         style={{ marginVertical: 20 }}
-        loginIndicator={loginIndicator}
         loginIndicatorStyle={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}
-        onPress={authenticateUser}
+        onPress={handleLogin}
       />
 
       <View
@@ -80,14 +123,18 @@ function Login(props) {
       >
         <Text style={{ color: 'white', fontSize: 16 }} >Don't have an account?   </Text>
         <TouchableOpacity
-        style={{marginLeft:-10}}
-        onPress={()=> props.navigation.navigate('Signup')}
+          style={{ marginLeft: -10 }}
+          onPress={() => props.navigation.navigate('Signup')}
         >
           <Text style={{ color: 'orange', fontSize: 18 }} > Sign up </Text>
         </TouchableOpacity>
       </View>
 
-
+      {
+        showLoader ?
+          <TransparentLoader isVisible={true} message={"Creating Account..."} />
+          : null
+      }
 
     </View>
   );
@@ -99,7 +146,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'black',
-    paddingVertical: 10,
+    paddingVertical: 30,
   },
   inputBox: {
     paddingHorizontal: 10,

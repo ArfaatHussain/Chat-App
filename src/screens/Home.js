@@ -1,56 +1,89 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, FlatList, TouchableHighlight } from 'react-native';
-import { Search, Trash2, Bell } from 'lucide-react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList, TouchableHighlight } from 'react-native';
+import { Search, Trash2, Bell, Plus, LogOut } from 'lucide-react-native';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
-
-// Define the initial structure for chats, use this for Firestore
-const Home = () => {
+import { API_URL } from '../Constant';
+import { useGlobalState } from '../context/GlobalStateContext';
+import { useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import { TextInput } from 'react-native-gesture-handler';
+import { get, ref } from 'firebase/database';
+import { db } from '../../config';
+import Toast from 'react-native-simple-toast'
+const Home = ({ navigation, route }) => {
     const [chatData, setChatData] = useState([]);
+    const [initialChats, setInitialChats] = useState([]);
+    const [search, setSearch] = useState('');
+    const { user, setUser } = useGlobalState();
 
-    // // Fetch chat data from Firestore
-    // useEffect(() => {
-    //     const fetchChats = async () => {
-    //         const querySnapshot = await getDocs(collection(db, 'chats'));
-    //         const chats = querySnapshot.docs.map(doc => ({
-    //             id: doc.id,
-    //             ...doc.data(),
-    //         }));
-    //         setChatData(chats);
-    //     };
-
-    //     fetchChats();
-    // }, []);
-
-    // Handle new chat addition (example)
-    const addNewChat = async () => {
-        const newChat = {
-            name: 'New Chat',
-            message: 'Hello, this is a new chat!',
-            time: new Date().toLocaleTimeString(),
-            image: 'https://example.com/profile.png', // Use a default or real image
-            totalMessage: 0,
-        };
-
-        try {
-            await addDoc(collection(db, 'chats'), newChat);
-            setChatData([...chatData, newChat]);
-        } catch (error) {
-            console.error("Error adding new chat: ", error);
+    useEffect(() => {
+        if (!user) {
+            getUser();
         }
-    };
+    }, [])
 
-    // Function to delete a chat from Firestore
+    useFocusEffect(
+        React.useCallback(() => {
+            getAllUsers();
+        }, [])
+    );
+
+    useEffect(() => {
+        if (search) {
+            const filteredChats = chatData.filter(chat => chat.name.toLowerCase().includes(search.toLowerCase()));
+            setChatData(filteredChats);
+        } else {
+            setChatData(initialChats);
+        }
+    }, [search])
+
+    async function getUser() {
+        try {
+            const user = await AsyncStorage.getItem('user');
+            if (user !== null) {
+                setUser(JSON.parse(user));
+            }
+        } catch (error) {
+            console.error("Error retrieving user ID: ", error);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function getAllUsers() {
+        try {
+            const userRef = ref(db, 'users');
+            const snapshot = await get(userRef);
+
+            const users = snapshot.val();
+            console.log("Users: ", users)
+
+            const filteredUsers = Object.keys(users).filter((key) => {
+                const item = users[key];
+                if (item.id !== user.id) {
+                    return item;
+                }
+            })
+            console.log("Filtered Users: ", filteredUsers)
+            setInitialChats(filteredUsers);
+            setChatData(filteredUsers);
+
+        } catch (error) {
+        Toast.show("Error fetching users"); 
+        }
+    }
+
+
     const deletedChat = async (chatId) => {
         try {
-            await deleteDoc(doc(db, 'chats', chatId));
+
             setChatData(chatData.filter(chat => chat.id !== chatId));
         } catch (error) {
             console.error("Error deleting chat: ", error);
         }
     };
 
-    // Function to render the delete button when swiping left
     const renderRightActions = (progress, dragX, itemId) => {
         return (
             <View style={{ alignItems: 'center', flexDirection: 'row', marginLeft: 10, paddingTop: 15 }}>
@@ -67,35 +100,48 @@ const Home = () => {
         );
     };
 
+    function convertTimeTo12HourFormat(time) {
+        const date = new Date(time);
+        const timeString = date.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
+        });
+
+        return timeString;
+    }
+
+    async function handleLogout() {
+        await AsyncStorage.removeItem('user');
+        setUser(null);
+        navigation.reset({
+            index: 0,
+            routes: [{ name: 'Login' }],
+        });
+    }
+
     function renderItem({ item }) {
+        // Check if the item is valid
+        if (!item || !item.id) {
+            return null;  // Skip rendering invalid items
+        }
+
+        const imageUri = item.image || 'https://www.example.com/default-image.png';  // Fallback image
+        const name = item.name || 'Unnamed User';  // Fallback name
+        const message = item.message || 'No messages yet';  // Fallback message
+        const time = item.time || Date.now();  // Fallback time
+
         return (
             <Swipeable renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, item.id)}>
                 <TouchableHighlight style={{ marginTop: 14 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Image source={{ uri: item.image }} style={styles.img} />
-
+                        <Image source={{ uri: imageUri }} style={styles.img} /> {/* Use fallback image */}
                         <View style={{ flex: 1, paddingHorizontal: 10 }}>
-                            <Text style={{ color: 'black', fontSize: 18, fontWeight: '600' }}>{item.name}</Text>
-                            <Text style={{ color: 'grey' }}>{item.message}</Text>
+                            <Text style={{ color: 'black', fontSize: 16, fontWeight: '600' }}>{name}</Text>
+                            <Text style={{ color: 'grey' }}>{message}</Text>
                         </View>
-
                         <View style={{ alignItems: 'flex-end' }}>
-                            <Text style={{ color: 'grey' }}>{item.time}</Text>
-                            <View
-                                style={{
-                                    backgroundColor: '#F04A4C',
-                                    paddingHorizontal: 5,
-                                    width: 20,
-                                    marginLeft: 25,
-                                    borderRadius: 15,
-                                    height: 20,
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    marginTop: 3,
-                                }}
-                            >
-                                <Text style={{ color: 'white', fontSize: 12 }}>{item.totalMessage}</Text>
-                            </View>
+                            <Text style={{ color: 'grey' }}>{convertTimeTo12HourFormat(time)}</Text>
                         </View>
                     </View>
                 </TouchableHighlight>
@@ -103,24 +149,32 @@ const Home = () => {
         );
     }
 
+
     return (
         <View style={styles.container}>
             {/* Header */}
             <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20 }}>
-                <Search color={'white'} size={25} />
-                <Text style={{ color: 'white', fontSize: 25 }}>Home</Text>
-                <Image source={require('../assets/profile.png')} style={styles.img} />
+                <TouchableOpacity
+                    onPress={handleLogout}
+                >
+                    <LogOut color={'white'} size={30} />
+                </TouchableOpacity>
+                <Text style={{ color: 'white', fontSize: 25 }}>{user && user.name}</Text>
+                <Image source={{ uri: user.image }} style={styles.img} />
             </View>
 
-            {/* Status List */}
-            <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} style={{ marginTop: 20, marginRight: 15, maxHeight: 60, marginHorizontal: 20 }}>
-                {data.map((item) => (
-                    <TouchableOpacity key={item.id} style={{ marginRight: 20 }}>
-                        <Image source={item.image} style={styles.img} />
-                        <Text style={{ color: 'white', textAlign: 'center' }}>{item.name}</Text>
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
+            <View
+                style={{ backgroundColor: 'grey', marginTop: 20, marginHorizontal: 15, flexDirection: 'row', alignItems: 'center', height: 55, paddingHorizontal: 15, borderRadius: 12 }}
+            >
+                <TextInput
+                    style={{ flex: 1, color: 'white' }}
+                    placeholder='Search'
+                    placeholderTextColor={'white'}
+                />
+
+                <Search color={'white'} size={25} />
+            </View>
+
 
             <View style={styles.chatList}>
                 {chatData.length ? (
@@ -133,8 +187,15 @@ const Home = () => {
                         />
                     </View>
                 ) : (
-                    <Text>No Chats Yet</Text>
+                    <Text style={{ textAlign: 'center', fontSize: 18, marginTop: '10%' }} >No Chats Yet</Text>
                 )}
+
+                <TouchableOpacity
+                    style={{ backgroundColor: 'orange', position: 'absolute', bottom: 30, right: 30, padding: 10, borderRadius: 40 }}
+                // onPress={() => navigation.navigate('AddContact')}
+                >
+                    <Image source={require('../assets/group.png')} style={{ height: 40, width: 40, resizeMode: 'cover' }} />
+                </TouchableOpacity>
             </View>
         </View>
     );
@@ -146,6 +207,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: 'black',
+        paddingTop: 10
     },
     img: {
         height: 45,

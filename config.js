@@ -1,5 +1,6 @@
+import { initializeApp } from 'firebase/app';
 import { getDatabase } from 'firebase/database';
-import firebase from 'firebase/compat/app';
+
 // Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyCVbERXYxcdBCJlg57ibFg_OEgljohA9Q4",
@@ -11,8 +12,10 @@ const firebaseConfig = {
   appId: "1:452302031683:web:b799d5192cf62780f6fdf6"
 };
 
-if(firebase.apps.length === 0){
-    firebase.initializeApp(firebaseConfig);
-}
-const db = getDatabase();
-export {db};
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+
+// Initialize the Realtime Database and get a reference to it
+const db = getDatabase(app);
+
+export { db };

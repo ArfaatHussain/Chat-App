@@ -7,7 +7,9 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import AppNavigation from "./src/navigation/AppNavigation";
 import { StatusBar } from 'expo-status-bar';
 import { View, Text } from "react-native";
+import { GlobalStateContext } from './src/context/GlobalStateContext';
 function App() {
+  const [user, setUser] = React.useState(null);
   return (
 
     <SafeAreaProvider style={{ flex: 1 }} >
@@ -16,8 +18,10 @@ function App() {
           <SafeAreaView
           style={{flex:1}}
           >
+            <GlobalStateContext.Provider value={{user,setUser}} >
           <StatusBar backgroundColor='white'  />
           <AppNavigation />
+            </GlobalStateContext.Provider>
           </SafeAreaView>
 
         </GestureHandlerRootView>
