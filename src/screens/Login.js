@@ -9,12 +9,13 @@ import TransparentLoader from '../components/TransparentLoader';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getDatabase, ref, get } from 'firebase/database';
 import { db } from '../../config'
+import { useGlobalState } from '../context/GlobalStateContext';
 function Login(props) {
   const [hidePassword, setHidePassword] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showLoader, setShowLoader] = useState(false);
-
+  const {user,setUser} = useGlobalState();
   const isValidInput = () => {
     if (!email) {
       Toast.show("Email is required");
@@ -55,8 +56,10 @@ function Login(props) {
         }
 
         if (matchedUser.password === password) {
+          console.log('Matched User: ', matchedUser);
           setShowLoader(false);
           await AsyncStorage.setItem('user', JSON.stringify(matchedUser));
+          setUser(matchedUser);
           Toast.show("Login successful");
           props.navigation.navigate('Home');
         } else {

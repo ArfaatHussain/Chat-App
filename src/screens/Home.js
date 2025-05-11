@@ -41,6 +41,7 @@ const Home = ({ navigation, route }) => {
     async function getUser() {
         try {
             const user = await AsyncStorage.getItem('user');
+            console.log("User fetched from async storage: ", user)
             if (user !== null) {
                 setUser(JSON.parse(user));
             }
@@ -59,18 +60,14 @@ const Home = ({ navigation, route }) => {
             const users = snapshot.val();
             console.log("Users: ", users)
 
-            const filteredUsers = Object.keys(users).filter((key) => {
-                const item = users[key];
-                if (item.id !== user.id) {
-                    return item;
-                }
-            })
+            const filteredUsers = Object.values(users).filter((item) => item.id !== user.id);
+
             console.log("Filtered Users: ", filteredUsers)
             setInitialChats(filteredUsers);
             setChatData(filteredUsers);
 
         } catch (error) {
-        Toast.show("Error fetching users"); 
+            Toast.show("Error fetching users");
         }
     }
 
@@ -121,21 +118,21 @@ const Home = ({ navigation, route }) => {
     }
 
     function renderItem({ item }) {
-        // Check if the item is valid
+        
         if (!item || !item.id) {
-            return null;  // Skip rendering invalid items
+            return null;  
         }
 
-        const imageUri = item.image || 'https://www.example.com/default-image.png';  // Fallback image
-        const name = item.name || 'Unnamed User';  // Fallback name
-        const message = item.message || 'No messages yet';  // Fallback message
-        const time = item.time || Date.now();  // Fallback time
+        const imageUri = item.image || 'https://www.example.com/default-image.png'; 
+        const name = item.name || 'Unknown User';
+        const message = item.message || 'Say hello to your friend!';
+        const time = item.time || Date.now(); 
 
         return (
             <Swipeable renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, item.id)}>
                 <TouchableHighlight style={{ marginTop: 14 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Image source={{ uri: imageUri }} style={styles.img} /> {/* Use fallback image */}
+                        <Image source={{ uri: imageUri }} style={styles.img} />
                         <View style={{ flex: 1, paddingHorizontal: 10 }}>
                             <Text style={{ color: 'black', fontSize: 16, fontWeight: '600' }}>{name}</Text>
                             <Text style={{ color: 'grey' }}>{message}</Text>
