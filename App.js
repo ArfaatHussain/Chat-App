@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import AppNavigation from "./src/navigation/AppNavigation";
 import { StatusBar } from 'expo-status-bar';
+import { View, Text } from "react-native";
 function App() {
   return (
 

@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'black',
-    paddingVertical: 30,
+    paddingVertical: 10,
   },
   inputBox: {
     paddingHorizontal: 10,
