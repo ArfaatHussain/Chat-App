@@ -8,8 +8,11 @@ import { useGlobalState } from '../context/GlobalStateContext';
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AddContact from '../screens/AddContact';
-const Stack = createNativeStackNavigator();
+import AllChats from '../screens/AllChats';
+import { View,Text } from 'react-native';
+import { ArrowLeft } from 'lucide-react-native';
 
+const Stack = createNativeStackNavigator();
 
 const AppNavigation = () => {
 
@@ -41,32 +44,53 @@ const AppNavigation = () => {
     return (
         <NavigationContainer>
             <Stack.Navigator
-                screenOptions={{
-                    headerShown: false
-                }}
                 initialRouteName={user && user.id ? 'Home' : 'Login'}
+                 screenOptions={({ route, navigation }) => {
+                let title;
+
+                if (route.name == "Home")
+                    title = "Login"
+                else if(route.name == "Chat"){
+                    title = "Chat"
+                }
+                else if (route.name == "AllChats"){
+                    title="Add Chat"
+                }
+
+                return {
+                    header: () => (
+                        <View style={{
+                            padding: 15,
+                            elevation: 5,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            backgroundColor: 'black',
+                            borderBottomWidth:1,
+                            borderBottomColor:'white'
+                        }}>
+                            <ArrowLeft size={30} color={'white'} onPress={() => navigation.goBack()} />
+                            <Text style={{
+                                color: 'white',
+                                fontWeight: '500',
+                                fontSize: 26,
+                                textAlign: 'center',
+                                flex: 1,
+                                marginRight: '3%'
+                            }}>
+                                {title}
+                            </Text>
+                        </View>
+                    ),
+                };
+            }}
             >
                 <Stack.Screen name='Login' component={Login} />
                 <Stack.Screen name='Signup' component={Signup} />
-                <Stack.Screen name='Home' component={Home} />
+                <Stack.Screen name='Home' component={Home} options={{headerShown:false}} />
                 <Stack.Screen name='Chat' component={Chat} />
-                <Stack.Screen name='AddContact' component={AddContact}
-                    options={{
-                        headerShown: true,
-                        title: 'Add Contact',
-                        headerStyle: {
-                            backgroundColor: 'black',
-                            elevation: 0,
-                            shadowOpacity: 0,
-                            borderBottomWidth: 0,
-                        },
-                        headerTintColor: 'white',
-                        headerTitleStyle: {
-                            borderBottomWidth: 2,
-                            borderBottomColor: 'white',
-                        },
-                    }}
 
+                <Stack.Screen name='AllChats' component={AllChats}
+                  
                 />
             </Stack.Navigator>
         </NavigationContainer>

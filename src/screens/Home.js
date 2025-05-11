@@ -6,7 +6,7 @@ import { useGlobalState } from '../context/GlobalStateContext';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TextInput } from 'react-native-gesture-handler';
-import { get, ref } from 'firebase/database';
+import { get, ref, remove } from 'firebase/database';
 import { db } from '../../config';
 import Toast from 'react-native-simple-toast'
 import Indicator from '../components/Indicator';
@@ -26,7 +26,7 @@ const Home = ({ navigation, route }) => {
 
     useFocusEffect(
         React.useCallback(() => {
-            getAllUsers();
+            getChatList();
         }, [])
     );
 
@@ -53,6 +53,23 @@ const Home = ({ navigation, route }) => {
         }
     }
 
+    async function getChatList() {
+        try {
+            setShowLoader(true);
+            const userRef = ref(db, `chatList/${user.id}`);
+            const snapshot = await get(userRef);
+            const users = Object.values(snapshot.val());
+            console.log("All Users: ", users);
+            setInitialChats(users);
+            setChatData(users);
+        } catch (error) {
+            console.error(error);
+            Toast.show("Error fetching users");
+        } finally {
+            setShowLoader(false); // Hide the loader when fetching is complete
+        }
+    }
+
     async function getAllUsers() {
         try {
             setShowLoader(true); // Start showing the loader
@@ -72,14 +89,18 @@ const Home = ({ navigation, route }) => {
         }
     }
 
-const deletedChat = async (chatId) => {
-    try {
-        // Update chatData state using functional update to avoid mutating the state directly
-        setChatData(prevChatData => prevChatData.filter(chat => chat.id !== chatId));
-    } catch (error) {
-        console.error("Error deleting chat: ", error);
-    }
-};
+    const deletedChat = async (userIdToBeDeleted) => {
+        try {
+            const chatListRef = ref(db, `chatList/${user.id}/${userIdToBeDeleted}`);
+            await remove(chatListRef);
+
+            setChatData(prevChatData => prevChatData.filter(chat => chat.id !== userIdToBeDeleted));
+            Toast.show("User deleted from chat list");
+
+        } catch (error) {
+            console.error("Error deleting chat: ", error);
+        }
+    };
 
     const renderRightActions = (progress, dragX, itemId) => {
         return (
@@ -113,8 +134,8 @@ const deletedChat = async (chatId) => {
                 index: 0,
                 routes: [{ name: 'Login' }],
             });
-        setChatData([]); 
-        setInitialChats([]);
+            setChatData([]);
+            setInitialChats([]);
         } catch (error) {
             console.error("Error during logout: ", error);
         }
@@ -122,6 +143,7 @@ const deletedChat = async (chatId) => {
 
     function handleChatPress(chat) {
         console.log("Chat pressed: ", chat);
+
         navigation.navigate('Chat', { chat: chat, currentUser: user });
     }
 
@@ -186,14 +208,16 @@ const deletedChat = async (chatId) => {
                             renderItem={renderItem}
                             keyExtractor={(item) => item.id.toString()}
                             showsVerticalScrollIndicator={false}
-                            removeClippedSubviews={false} 
+                            removeClippedSubviews={false}
                         />
                     </View>
                 ) : (
-                    <Text style={{ textAlign: 'center', fontSize: 18, marginTop: '10%' }}>No Chats Yet</Text>
+                    <Text style={{ textAlign: 'center', fontSize: 18, marginTop: '10%' }}>{showLoader ? '' : 'No Chats Yet'}</Text>
                 )}
 
-                <TouchableOpacity style={{ backgroundColor: 'orange', position: 'absolute', bottom: 30, right: 30, padding: 10, borderRadius: 40 }}>
+                <TouchableOpacity style={{ backgroundColor: 'orange', position: 'absolute', bottom: 30, right: 30, padding: 10, borderRadius: 40 }}
+                    onPress={() => navigation.navigate('AllChats', { chatData: initialChats, currentUser: user })}
+                >
                     <Image source={require('../assets/group.png')} style={{ height: 40, width: 40, resizeMode: 'cover' }} />
                 </TouchableOpacity>
             </View>
