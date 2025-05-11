@@ -2,7 +2,7 @@ import { TouchableOpacity, Text, StyleSheet,ActivityIndicator } from 'react-nati
 
 const Indicator = (props)=>{
     return (
-        <ActivityIndicator color={'white'} size={25} animating={true} style={props.style}/>
+        <ActivityIndicator color={'orange'} size={65} animating={true} style={props.style}/>
     )
 }
 

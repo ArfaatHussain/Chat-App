@@ -1,72 +1,70 @@
-import React from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { useState, useCallback, useEffect } from 'react';
 import { GiftedChat, InputToolbar, Send, Message } from 'react-native-gifted-chat';
 import Icon from 'react-native-vector-icons/Feather';
 import * as ImagePicker from 'expo-image-picker';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';  // Firebase Storage imports
+import { db } from '../../config';  // Firebase DB imports
+import uuid from 'react-native-uuid';  // Import UUID to generate unique chatId
 
-function ChatStructure() {
+function ChatStructure({ chat, navigation,currentUser}) {
   const [messages, setMessages] = useState([]);
+  const [chatId, setChatId] = useState('');
+  // const {user,setUser} = useGlobalState();
+  useEffect(() => {
+    const uniqueChatId = uuid.v4();
+    setChatId(uniqueChatId);
 
-  // useEffect(() => {
-  //   const unsubscribe = db.collection('messages')
-  //     .orderBy('createdAt', 'desc')
-  //     .onSnapshot(snapshot => {
-  //       const fetchedMessages = snapshot.docs.map(doc => {
-  //         const data = doc.data();
-  //         return {
-  //           _id: doc.id,
-  //           text: data.text,
-  //           createdAt: data.createdAt.toDate(),
-  //           user: {
-  //             _id: data.userId,
-  //             name: data.userName,
-  //             avatar: data.userAvatar,
-  //           },
-  //           image: data.image || null,
-  //         };
-  //       });
-  //       setMessages(fetchedMessages.reverse());
-  //     });
-
-  //   return () => unsubscribe();
-  // }, []);
+    if (chat.messages) {
+      setMessages(chat.messages);
+    }
+  }, [chat]);
 
   const onSend = useCallback((messages = []) => {
-    // Add message to Firestore
-    const message = messages[0];
-    db.collection('messages').add({
-      text: message.text || '',
-      createdAt: new Date(),
-      userId: message.user._id,
-      userName: message.user.name,
-      userAvatar: message.user.avatar,
-      image: message.image || null,
-    });
-    setMessages((previousMessages) =>
-      GiftedChat.append(previousMessages, messages)
-    );
+    setMessages((previousMessages) => GiftedChat.append(previousMessages, messages));
   }, []);
 
   const handleImagePicker = async () => {
+    // const result = await ImagePicker.launchImageLibraryAsync({
+    //   mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    //   allowsEditing: false,
+    //   quality: 1,
+    // });
+
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ImagePicker.MediaType.Images,  // Updated to use MediaType enum
       allowsEditing: false,
       quality: 1,
     });
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
-      const imageMessage = {
-        _id: Math.random(),
-        text: '',
-        createdAt: new Date(),
-        user: {
-          _id: 1,
-        },
-        image: result.assets[0].uri,
-      };
+      const imageUri = result.assets[0].uri;
 
-      onSend([imageMessage]); // Send the image as a message
+      const storage = getStorage();
+      const storageRef = ref(storage, 'chat_images/' + new Date().toISOString());
+
+      // Upload the image file
+      const response = await fetch(imageUri);
+      const blob = await response.blob();
+      uploadBytes(storageRef, blob).then((snapshot) => {
+        console.log('Image uploaded successfully');
+        // Get the download URL of the uploaded image
+        getDownloadURL(snapshot.ref).then((downloadURL) => {
+          const imageMessage = {
+            id: Math.random().toString(),  // Generate a unique ID for the message
+            text: '',  // No text, just image
+            createdAt: new Date(),
+            user: {
+              id: chat.id,  // Use chat user ID
+              name: chat.name,  // Use chat user name
+            },
+            image: downloadURL,  // Store the URL of the uploaded image
+            chatId: chatId,  // Chat ID to link the message to the chat
+          };
+
+          onSend([imageMessage]);  // Send the image message
+        });
+      });
     } else {
       console.log('User cancelled image picker');
     }
@@ -77,7 +75,9 @@ function ChatStructure() {
       messages={messages}
       onSend={(messages) => onSend(messages)}
       user={{
-        _id: 1,
+        id: currentUser.id,
+        name: currentUser.name, 
+        avatar: currentUser.image,
       }}
       renderInputToolbar={(props) => (
         <InputToolbar

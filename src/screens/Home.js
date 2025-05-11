@@ -2,26 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, FlatList, TouchableHighlight } from 'react-native';
 import { Search, Trash2, Bell, Plus, LogOut } from 'lucide-react-native';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
-import { API_URL } from '../Constant';
 import { useGlobalState } from '../context/GlobalStateContext';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
 import { TextInput } from 'react-native-gesture-handler';
 import { get, ref } from 'firebase/database';
 import { db } from '../../config';
 import Toast from 'react-native-simple-toast'
+import Indicator from '../components/Indicator';
+
 const Home = ({ navigation, route }) => {
     const [chatData, setChatData] = useState([]);
     const [initialChats, setInitialChats] = useState([]);
     const [search, setSearch] = useState('');
     const { user, setUser } = useGlobalState();
+    const [showLoader, setShowLoader] = useState(true);
 
     useEffect(() => {
         if (!user) {
             getUser();
         }
-    }, [])
+    }, []);
 
     useFocusEffect(
         React.useCallback(() => {
@@ -36,60 +37,56 @@ const Home = ({ navigation, route }) => {
         } else {
             setChatData(initialChats);
         }
-    }, [search])
+    }, [search]);
 
     async function getUser() {
         try {
             const user = await AsyncStorage.getItem('user');
-            console.log("User fetched from async storage: ", user)
+            console.log("User fetched from async storage: ", user);
             if (user !== null) {
                 setUser(JSON.parse(user));
             }
         } catch (error) {
             console.error("Error retrieving user ID: ", error);
         } finally {
-            setLoading(false);
+            setShowLoader(false); // Fix for showLoader
         }
     }
 
     async function getAllUsers() {
         try {
+            setShowLoader(true); // Start showing the loader
             const userRef = ref(db, 'users');
             const snapshot = await get(userRef);
-
             const users = snapshot.val();
-            console.log("Users: ", users)
+            console.log("All Users: ", users);
 
             const filteredUsers = Object.values(users).filter((item) => item.id !== user.id);
-
-            console.log("Filtered Users: ", filteredUsers)
+            console.log("Filtered Users: ", filteredUsers);
             setInitialChats(filteredUsers);
             setChatData(filteredUsers);
-
         } catch (error) {
             Toast.show("Error fetching users");
+        } finally {
+            setShowLoader(false); // Hide the loader when fetching is complete
         }
     }
 
-
-    const deletedChat = async (chatId) => {
-        try {
-
-            setChatData(chatData.filter(chat => chat.id !== chatId));
-        } catch (error) {
-            console.error("Error deleting chat: ", error);
-        }
-    };
+const deletedChat = async (chatId) => {
+    try {
+        // Update chatData state using functional update to avoid mutating the state directly
+        setChatData(prevChatData => prevChatData.filter(chat => chat.id !== chatId));
+    } catch (error) {
+        console.error("Error deleting chat: ", error);
+    }
+};
 
     const renderRightActions = (progress, dragX, itemId) => {
         return (
             <View style={{ alignItems: 'center', flexDirection: 'row', marginLeft: 10, paddingTop: 15 }}>
-                <TouchableOpacity
-                    style={{ backgroundColor: 'black', padding: 7, borderRadius: 40 }}
-                >
+                <TouchableOpacity style={{ backgroundColor: 'black', padding: 7, borderRadius: 40 }}>
                     <Bell color={'white'} size={22} />
                 </TouchableOpacity>
-
                 <TouchableOpacity style={[styles.deleteButton, { marginLeft: 5 }]} onPress={() => deletedChat(itemId)}>
                     <Trash2 color={'white'} size={22} />
                 </TouchableOpacity>
@@ -109,28 +106,38 @@ const Home = ({ navigation, route }) => {
     }
 
     async function handleLogout() {
-        await AsyncStorage.removeItem('user');
-        setUser(null);
-        navigation.reset({
-            index: 0,
-            routes: [{ name: 'Login' }],
-        });
+        try {
+            await AsyncStorage.removeItem('user');
+            setUser(null);
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+            });
+        setChatData([]); 
+        setInitialChats([]);
+        } catch (error) {
+            console.error("Error during logout: ", error);
+        }
+    }
+
+    function handleChatPress(chat) {
+        console.log("Chat pressed: ", chat);
+        navigation.navigate('Chat', { chat: chat, currentUser: user });
     }
 
     function renderItem({ item }) {
-        
         if (!item || !item.id) {
-            return null;  
+            return null;
         }
 
-        const imageUri = item.image || 'https://www.example.com/default-image.png'; 
+        const imageUri = item.image || 'https://www.example.com/default-image.png';
         const name = item.name || 'Unknown User';
         const message = item.message || 'Say hello to your friend!';
-        const time = item.time || Date.now(); 
+        const time = item.time || Date.now();
 
         return (
             <Swipeable renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, item.id)}>
-                <TouchableHighlight style={{ marginTop: 14 }}>
+                <TouchableOpacity style={{ marginTop: 14 }} onPress={() => handleChatPress(item)}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                         <Image source={{ uri: imageUri }} style={styles.img} />
                         <View style={{ flex: 1, paddingHorizontal: 10 }}>
@@ -141,56 +148,52 @@ const Home = ({ navigation, route }) => {
                             <Text style={{ color: 'grey' }}>{convertTimeTo12HourFormat(time)}</Text>
                         </View>
                     </View>
-                </TouchableHighlight>
+                </TouchableOpacity>
             </Swipeable>
         );
     }
-
 
     return (
         <View style={styles.container}>
             {/* Header */}
             <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20 }}>
-                <TouchableOpacity
-                    onPress={handleLogout}
-                >
+                <TouchableOpacity onPress={handleLogout}>
                     <LogOut color={'white'} size={30} />
                 </TouchableOpacity>
                 <Text style={{ color: 'white', fontSize: 25 }}>{user && user.name}</Text>
                 <Image source={{ uri: user.image }} style={styles.img} />
             </View>
 
-            <View
-                style={{ backgroundColor: 'grey', marginTop: 20, marginHorizontal: 15, flexDirection: 'row', alignItems: 'center', height: 55, paddingHorizontal: 15, borderRadius: 12 }}
-            >
-                <TextInput
-                    style={{ flex: 1, color: 'white' }}
-                    placeholder='Search'
-                    placeholderTextColor={'white'}
-                />
-
+            <View style={{ backgroundColor: 'grey', marginTop: 20, marginHorizontal: 15, flexDirection: 'row', alignItems: 'center', height: 55, paddingHorizontal: 15, borderRadius: 12 }}>
+                <TextInput style={{ flex: 1, color: 'white' }} placeholder='Search' placeholderTextColor={'white'} />
                 <Search color={'white'} size={25} />
             </View>
 
-
             <View style={styles.chatList}>
-                {chatData.length ? (
+                {
+                    chatData.length === 0 && showLoader ?
+                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                            <Indicator />
+                            <Text>Getting chats...</Text>
+                        </View>
+                        : null
+                }
+
+                {chatData.length > 0 && !showLoader ? (
                     <View style={{ marginLeft: 20, marginRight: 20, marginVertical: 40 }}>
                         <FlatList
                             data={chatData}
                             renderItem={renderItem}
                             keyExtractor={(item) => item.id.toString()}
                             showsVerticalScrollIndicator={false}
+                            removeClippedSubviews={false} 
                         />
                     </View>
                 ) : (
-                    <Text style={{ textAlign: 'center', fontSize: 18, marginTop: '10%' }} >No Chats Yet</Text>
+                    <Text style={{ textAlign: 'center', fontSize: 18, marginTop: '10%' }}>No Chats Yet</Text>
                 )}
 
-                <TouchableOpacity
-                    style={{ backgroundColor: 'orange', position: 'absolute', bottom: 30, right: 30, padding: 10, borderRadius: 40 }}
-                // onPress={() => navigation.navigate('AddContact')}
-                >
+                <TouchableOpacity style={{ backgroundColor: 'orange', position: 'absolute', bottom: 30, right: 30, padding: 10, borderRadius: 40 }}>
                     <Image source={require('../assets/group.png')} style={{ height: 40, width: 40, resizeMode: 'cover' }} />
                 </TouchableOpacity>
             </View>
@@ -204,7 +207,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: 'black',
-        paddingTop: 10
+        paddingTop: 10,
     },
     img: {
         height: 45,
@@ -228,3 +231,4 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
 });
+
