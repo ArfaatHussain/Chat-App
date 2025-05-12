@@ -8,6 +8,8 @@ import AppNavigation from "./src/navigation/AppNavigation";
 import { StatusBar } from 'expo-status-bar';
 import { View, Text } from "react-native";
 import { GlobalStateContext } from './src/context/GlobalStateContext';
+
+
 function App() {
   const [user, setUser] = React.useState(null);
   return (
@@ -19,7 +21,7 @@ function App() {
           style={{flex:1}}
           >
             <GlobalStateContext.Provider value={{user,setUser}} >
-          <StatusBar backgroundColor='white'  />
+          <StatusBar backgroundColor='black'  />
           <AppNavigation />
             </GlobalStateContext.Provider>
           </SafeAreaView>
@@ -27,6 +29,8 @@ function App() {
         </GestureHandlerRootView>
       </KeyboardProvider>
     </SafeAreaProvider>
+
+    
 
   );
 }

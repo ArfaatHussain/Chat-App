@@ -8,6 +8,9 @@ import { get, ref, set } from 'firebase/database';
 import { db } from '../../config';
 import TransparentLoader from '../components/TransparentLoader';
 import Toast from 'react-native-simple-toast'
+import uuid from 'react-native-uuid';
+
+
 const AllChats = ({ navigation, route }) => {
     console.log("Chat Data received in All Chats: ", route.params.chatData)
     const [chatData, setChatData] = useState(route.params.chatData);
@@ -15,6 +18,7 @@ const AllChats = ({ navigation, route }) => {
     const { currentUser } = route.params;
     const [search, setSearch] = useState('');
     const [showLoader, setShowLoader] = useState(false);
+    const [roomId, setRoomId] = useState();
 
     useEffect(() => {
         if (search) {
@@ -25,10 +29,18 @@ const AllChats = ({ navigation, route }) => {
         }
     }, [search]);
 
-   async function handleChatPress(chat) {
+    const generateUserId = () => {
+        return uuid.v4();
+    };
+
+    async function handleAddChat(chat) {
         setShowLoader(true);
         console.log("Chat pressed: ", chat);
+
+        setRoomId(generateUserId());
+
         const userToBeAdded = {
+            roomId: roomId,
             id: chat.id,
             name: chat.name,
             about: chat.about,
@@ -47,6 +59,7 @@ const AllChats = ({ navigation, route }) => {
             } else {
                 await set(chatListRef, userToBeAdded);
                 Toast.show("User added to chat list");
+                setRoomId();
             }
         } catch (error) {
             console.error(error)
@@ -77,7 +90,7 @@ const AllChats = ({ navigation, route }) => {
                     </View>
                     <View style={{ alignItems: 'flex-end' }}>
                         <TouchableOpacity style={{ backgroundColor: 'black', paddingHorizontal: 15, paddingVertical: 5, borderRadius: 12 }}
-                            onPress={() => handleChatPress(item)}
+                            onPress={() => handleAddChat(item)}
                         >
                             <Text style={{ color: 'white' }} >Add</Text>
                         </TouchableOpacity>
@@ -87,14 +100,15 @@ const AllChats = ({ navigation, route }) => {
 
         );
     }
+    
 
     return (
         <View style={styles.container}>
 
             <View style={{ backgroundColor: 'grey', marginTop: 20, marginHorizontal: 15, flexDirection: 'row', alignItems: 'center', height: 55, paddingHorizontal: 15, borderRadius: 12 }}>
                 <TextInput style={{ flex: 1, color: 'white' }} placeholder='Search' placeholderTextColor={'white'}
-                value={search}
-                onChangeText={setSearch}
+                    value={search}
+                    onChangeText={setSearch}
                 />
                 <Search color={'white'} size={25} />
             </View>
@@ -122,6 +136,8 @@ const AllChats = ({ navigation, route }) => {
             }
         </View>
     );
+
+
 };
 
 export default AllChats;

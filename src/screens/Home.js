@@ -17,9 +17,12 @@ const Home = ({ navigation, route }) => {
     const [search, setSearch] = useState('');
     const { user, setUser } = useGlobalState();
     const [showLoader, setShowLoader] = useState(true);
+    const [allUsers,setAllUsers] = useState([]);
 
     useEffect(() => {
+        getAllUsers();
         if (!user) {
+
             getUser();
         }
     }, []);
@@ -31,6 +34,7 @@ const Home = ({ navigation, route }) => {
     );
 
     useEffect(() => {
+
         if (search) {
             const filteredChats = chatData.filter(chat => chat.name.toLowerCase().includes(search.toLowerCase()));
             setChatData(filteredChats);
@@ -57,11 +61,19 @@ const Home = ({ navigation, route }) => {
         try {
             setShowLoader(true);
             const userRef = ref(db, `chatList/${user.id}`);
+
             const snapshot = await get(userRef);
+
+            if(snapshot.exists()) {
             const users = Object.values(snapshot.val());
             console.log("All Users: ", users);
             setInitialChats(users);
             setChatData(users);
+            }else{
+                Toast.show("No chat data found");
+                setInitialChats([]);
+                setChatData([]);
+            }
         } catch (error) {
             console.error(error);
             Toast.show("Error fetching users");
@@ -80,8 +92,8 @@ const Home = ({ navigation, route }) => {
 
             const filteredUsers = Object.values(users).filter((item) => item.id !== user.id);
             console.log("Filtered Users: ", filteredUsers);
-            setInitialChats(filteredUsers);
-            setChatData(filteredUsers);
+            setAllUsers(filteredUsers);
+
         } catch (error) {
             Toast.show("Error fetching users");
         } finally {
@@ -219,7 +231,7 @@ const Home = ({ navigation, route }) => {
                 )}
 
                 <TouchableOpacity style={{ backgroundColor: 'orange', position: 'absolute', bottom: 30, right: 30, padding: 10, borderRadius: 40 }}
-                    onPress={() => navigation.navigate('AllChats', { chatData: initialChats, currentUser: user })}
+                    onPress={() => navigation.navigate('AllChats', { chatData: allUsers, currentUser: user })}
                 >
                     <Image source={require('../assets/group.png')} style={{ height: 40, width: 40, resizeMode: 'cover' }} />
                 </TouchableOpacity>

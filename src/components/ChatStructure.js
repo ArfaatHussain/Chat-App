@@ -3,14 +3,17 @@ import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { GiftedChat, InputToolbar, Send, Message } from 'react-native-gifted-chat';
 import Icon from 'react-native-vector-icons/Feather';
 import * as ImagePicker from 'expo-image-picker';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';  // Firebase Storage imports
-import { db } from '../../config';  // Firebase DB imports
-import uuid from 'react-native-uuid';  // Import UUID to generate unique chatId
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db } from '../../config';
+import { ref, set, push, onChildAdded, off } from 'firebase/database';
+import uuid from 'react-native-uuid';
 
-function ChatStructure({ chat, navigation,currentUser}) {
+function ChatStructure({ chat, navigation, currentUser }) {
   const [messages, setMessages] = useState([]);
   const [chatId, setChatId] = useState('');
-  // const {user,setUser} = useGlobalState();
+  const [roomId, setRoomId] = useState("385207c8-27eb-4602-98a1-8c90920366e3");
+  const [allChat, setAllChat] = useState([]);
+
   useEffect(() => {
     const uniqueChatId = uuid.v4();
     setChatId(uniqueChatId);
@@ -20,49 +23,63 @@ function ChatStructure({ chat, navigation,currentUser}) {
     }
   }, [chat]);
 
+  useEffect(() => {
+    const msgRef = ref(db, '/messages/' + roomId);
+    const onChildAdd = snapshot => {
+      const data = snapshot.val();
+      if (Array.isArray(data.messages)) {
+        const validMessages = data.messages
+          .map(msg => ({
+            ...msg,
+            _id: msg._id?.toString() || uuid.v4(),
+            createdAt: new Date(msg.createdAt),
+          }))
+          .filter(msg => msg.user && msg._id && msg.createdAt);
+        setAllChat((state) => GiftedChat.append(state, validMessages));
+      }
+    };
+
+    onChildAdded(msgRef, onChildAdd);
+    return () => {
+      off(msgRef, 'child_added', onChildAdd);
+    };
+  }, [roomId]);
+
   const onSend = useCallback((messages = []) => {
-    setMessages((previousMessages) => GiftedChat.append(previousMessages, messages));
+    const msg = messages[0];
+    setAllChat((previousMessages) => GiftedChat.append(previousMessages, messages));
+    sndMsg(msg);
   }, []);
 
   const handleImagePicker = async () => {
-    // const result = await ImagePicker.launchImageLibraryAsync({
-    //   mediaTypes: ImagePicker.MediaTypeOptions.Images,
-    //   allowsEditing: false,
-    //   quality: 1,
-    // });
-
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.Images,  // Updated to use MediaType enum
+      mediaTypes: ImagePicker.MediaType.Images,
       allowsEditing: false,
       quality: 1,
     });
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const imageUri = result.assets[0].uri;
-
       const storage = getStorage();
-      const storageRef = ref(storage, 'chat_images/' + new Date().toISOString());
+      const fileRef = storageRef(storage, 'chat_images/' + new Date().toISOString());
 
-      // Upload the image file
       const response = await fetch(imageUri);
       const blob = await response.blob();
-      uploadBytes(storageRef, blob).then((snapshot) => {
-        console.log('Image uploaded successfully');
-        // Get the download URL of the uploaded image
+
+      uploadBytes(fileRef, blob).then((snapshot) => {
         getDownloadURL(snapshot.ref).then((downloadURL) => {
           const imageMessage = {
-            id: Math.random().toString(),  // Generate a unique ID for the message
-            text: '',  // No text, just image
+            _id: uuid.v4(),
+            text: '',
             createdAt: new Date(),
             user: {
-              id: chat.id,  // Use chat user ID
-              name: chat.name,  // Use chat user name
+              _id: currentUser.id,
+              name: currentUser.name,
+              avatar: currentUser.image,
             },
-            image: downloadURL,  // Store the URL of the uploaded image
-            chatId: chatId,  // Chat ID to link the message to the chat
+            image: downloadURL,
           };
-
-          onSend([imageMessage]);  // Send the image message
+          onSend([imageMessage]);
         });
       });
     } else {
@@ -70,13 +87,48 @@ function ChatStructure({ chat, navigation,currentUser}) {
     }
   };
 
+  const sndMsg = async (msg) => {
+    try {
+      const msgData = {
+        roomId: roomId,
+        from: currentUser.id,
+        to: chat.id,
+        messages: [{
+          ...msg,
+          _id: msg._id?.toString() || uuid.v4(),
+          createdAt: msg.createdAt.toString()
+        }],
+        sendTime: new Date().getTime(),
+        messageType: msg.image ? 'image' : 'text',
+      };
+
+      const newReference = push(ref(db, 'messages/' + roomId));
+      msgData.id = newReference.key;
+      await set(newReference, msgData);
+      console.log("Message data updated");
+
+      const chatListUpdate = {
+        lastMsg: msg.text || 'Photo',
+        sendTime: msgData.sendTime,
+      };
+
+      await Promise.all([
+        set(ref(db, `/chatlist1/${currentUser.id}/${chat.id}`), chatListUpdate),
+        set(ref(db, `/chatlist1/${chat.id}/${currentUser.id}`), chatListUpdate),
+      ]);
+      console.log('Chatlist updated for both users');
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
+  };
+
   return (
     <GiftedChat
-      messages={messages}
-      onSend={(messages) => onSend(messages)}
+      messages={allChat}
+      onSend={onSend}
       user={{
-        id: currentUser.id,
-        name: currentUser.name, 
+        _id: currentUser.id,
+        name: currentUser.name,
         avatar: currentUser.image,
       }}
       renderInputToolbar={(props) => (
@@ -107,10 +159,7 @@ function ChatStructure({ chat, navigation,currentUser}) {
             const imageUri = imageProps.currentMessage.image;
             return (
               <View style={styles.messageImageContainer}>
-                <Image
-                  source={{ uri: imageUri }}
-                  style={styles.imageMessage}
-                />
+                <Image source={{ uri: imageUri }} style={styles.imageMessage} />
               </View>
             );
           }}

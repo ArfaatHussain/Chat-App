@@ -125,7 +125,7 @@ function Signup(props) {
           />
         </View>
 
-        <View style={[styles.inputBox, { marginTop: 25 }]}>
+        <View style={[styles.inputBox, { marginTop: 10 }]}>
           <TextInput
             placeholder="Enter email"
             value={email}
@@ -164,7 +164,7 @@ function Signup(props) {
           </TouchableOpacity>
         </View>
 
-        <View style={[styles.inputBox, { marginTop: 25 }]}>
+        <View style={[styles.inputBox, { marginTop: 10 }]}>
           <TextInput
             placeholder="Enter about"
             value={about}
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'black',
   },
   contentContainer: {
-    flex: 1,
+    // flex: 1,
     paddingHorizontal: 25,
     paddingVertical: 20,
   },

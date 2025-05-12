@@ -7,7 +7,6 @@ import Home from '../screens/Home';
 import { useGlobalState } from '../context/GlobalStateContext';
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import AddContact from '../screens/AddContact';
 import AllChats from '../screens/AllChats';
 import { View,Text } from 'react-native';
 import { ArrowLeft } from 'lucide-react-native';
@@ -84,14 +83,13 @@ const AppNavigation = () => {
                 };
             }}
             >
-                <Stack.Screen name='Login' component={Login} />
+                <Stack.Screen name='Login' component={Login} options={{headerShown:false}} />
                 <Stack.Screen name='Signup' component={Signup} />
                 <Stack.Screen name='Home' component={Home} options={{headerShown:false}} />
-                <Stack.Screen name='Chat' component={Chat} />
+                <Stack.Screen name='Chat' component={Chat} options={{headerShown:false}} />
+                <Stack.Screen name='AllChats' component={AllChats}/>
 
-                <Stack.Screen name='AllChats' component={AllChats}
-                  
-                />
+
             </Stack.Navigator>
         </NavigationContainer>
     )

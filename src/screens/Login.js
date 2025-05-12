@@ -16,6 +16,7 @@ function Login(props) {
   const [password, setPassword] = useState('');
   const [showLoader, setShowLoader] = useState(false);
   const {user,setUser} = useGlobalState();
+
   const isValidInput = () => {
     if (!email) {
       Toast.show("Email is required");
@@ -135,7 +136,7 @@ function Login(props) {
 
       {
         showLoader ?
-          <TransparentLoader isVisible={true} message={"Creating Account..."} />
+          <TransparentLoader isVisible={true} message={"Login Account..."} />
           : null
       }
 
