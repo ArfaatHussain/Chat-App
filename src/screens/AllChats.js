@@ -29,24 +29,18 @@ const AllChats = ({ navigation, route }) => {
         }
     }, [search]);
 
-    const generateUserId = () => {
-        return uuid.v4();
-    };
-
     async function handleAddChat(chat) {
         setShowLoader(true);
         console.log("Chat pressed: ", chat);
 
-        setRoomId(generateUserId());
-
         const userToBeAdded = {
-            roomId: roomId,
             id: chat.id,
             name: chat.name,
             about: chat.about,
             email: chat.email,
             image: chat.image,
-            time: Date.now()
+            time: Date.now(),
+            lastMessage: 'Say hello to your friend!',
         }
 
         try {
@@ -59,7 +53,6 @@ const AllChats = ({ navigation, route }) => {
             } else {
                 await set(chatListRef, userToBeAdded);
                 Toast.show("User added to chat list");
-                setRoomId();
             }
         } catch (error) {
             console.error(error)

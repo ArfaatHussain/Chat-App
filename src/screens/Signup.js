@@ -201,7 +201,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'black',
   },
   contentContainer: {
-    // flex: 1,
     paddingHorizontal: 25,
     paddingVertical: 20,
   },

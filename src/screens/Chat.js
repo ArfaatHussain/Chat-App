@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import ChatStructure from '../components/ChatStructure';
 const Chat = ({navigation,route}) => {
 
-    const {chat, currentUser} = route.params;
+    const {receiverData, currentUser} = route.params;
    
 
     return (
@@ -23,11 +23,11 @@ const Chat = ({navigation,route}) => {
                 <View
                     style={styles.middleHeader}
                 >
-                    <Image source={{uri: chat.image}} style={styles.headerImg} />
+                    <Image source={{uri: receiverData.image}} style={styles.headerImg} />
                     <View
                         style={{ marginLeft: 15 }}
                     >
-                        <Text style={{ color: 'white', fontWeight: '600', fontSize: 18 }} >{chat.name}</Text>
+                        <Text style={{ color: 'white', fontWeight: '600', fontSize: 18 }} >{receiverData.name}</Text>
                         <Text style={{ color: 'grey', fontWeight: '600', fontSize: 13 }}  >Active Now</Text>
                     </View>
                 </View>
@@ -51,7 +51,7 @@ const Chat = ({navigation,route}) => {
 
             {/* Chat Structure  */}
 
-            <ChatStructure chat = {chat} navigation={navigation} currentUser={currentUser} />
+            <ChatStructure receiverData = {receiverData} navigation={navigation} currentUser={currentUser} />
 
         </View>
     )

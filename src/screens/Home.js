@@ -6,7 +6,7 @@ import { useGlobalState } from '../context/GlobalStateContext';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TextInput } from 'react-native-gesture-handler';
-import { get, ref, remove } from 'firebase/database';
+import { get, ref, remove, onValue } from 'firebase/database';
 import { db } from '../../config';
 import Toast from 'react-native-simple-toast'
 import Indicator from '../components/Indicator';
@@ -17,7 +17,7 @@ const Home = ({ navigation, route }) => {
     const [search, setSearch] = useState('');
     const { user, setUser } = useGlobalState();
     const [showLoader, setShowLoader] = useState(true);
-    const [allUsers,setAllUsers] = useState([]);
+    const [allUsers, setAllUsers] = useState([]);
 
     useEffect(() => {
         getAllUsers();
@@ -46,8 +46,8 @@ const Home = ({ navigation, route }) => {
     async function getUser() {
         try {
             const user = await AsyncStorage.getItem('user');
-            console.log("User fetched from async storage: ", user);
             if (user !== null) {
+                // console.log("Current user ID", user);
                 setUser(JSON.parse(user));
             }
         } catch (error) {
@@ -61,24 +61,22 @@ const Home = ({ navigation, route }) => {
         try {
             setShowLoader(true);
             const userRef = ref(db, `chatList/${user.id}`);
-
-            const snapshot = await get(userRef);
-
-            if(snapshot.exists()) {
-            const users = Object.values(snapshot.val());
-            console.log("All Users: ", users);
-            setInitialChats(users);
-            setChatData(users);
-            }else{
-                Toast.show("No chat data found");
-                setInitialChats([]);
-                setChatData([]);
-            }
+            onValue(userRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const users = Object.values(snapshot.val());
+                    setChatData(users); // This updates your chatData with the new chat data from Firebase
+                    setInitialChats(users);
+                } else {
+                    Toast.show("No chat data found");
+                    setChatData([]);
+                    setInitialChats([]);
+                }
+            });
         } catch (error) {
-            console.error(error);
-            Toast.show("Error fetching users");
+            console.error("Error fetching chats: ", error);
+            Toast.show("Error fetching chats");
         } finally {
-            setShowLoader(false); // Hide the loader when fetching is complete
+            setShowLoader(false);
         }
     }
 
@@ -88,10 +86,8 @@ const Home = ({ navigation, route }) => {
             const userRef = ref(db, 'users');
             const snapshot = await get(userRef);
             const users = snapshot.val();
-            console.log("All Users: ", users);
 
             const filteredUsers = Object.values(users).filter((item) => item.id !== user.id);
-            console.log("Filtered Users: ", filteredUsers);
             setAllUsers(filteredUsers);
 
         } catch (error) {
@@ -156,17 +152,18 @@ const Home = ({ navigation, route }) => {
     function handleChatPress(chat) {
         console.log("Chat pressed: ", chat);
 
-        navigation.navigate('Chat', { chat: chat, currentUser: user });
+        navigation.navigate('Chat', { receiverData: chat, currentUser: user });
     }
 
     function renderItem({ item }) {
+        console.log("Rendering item:", item);
         if (!item || !item.id) {
             return null;
         }
 
         const imageUri = item.image || 'https://www.example.com/default-image.png';
         const name = item.name || 'Unknown User';
-        const message = item.message || 'Say hello to your friend!';
+        const message = item.lastMessage || 'last message not received';
         const time = item.time || Date.now();
 
         return (
@@ -199,9 +196,9 @@ const Home = ({ navigation, route }) => {
             </View>
 
             <View style={{ backgroundColor: 'grey', marginTop: 20, marginHorizontal: 15, flexDirection: 'row', alignItems: 'center', height: 55, paddingHorizontal: 15, borderRadius: 12 }}>
-                <TextInput style={{ flex: 1, color: 'white' }} placeholder='Search' placeholderTextColor={'white'} 
-                value={search}
-                onChangeText={setSearch}
+                <TextInput style={{ flex: 1, color: 'white' }} placeholder='Search' placeholderTextColor={'white'}
+                    value={search}
+                    onChangeText={setSearch}
                 />
                 <Search color={'white'} size={25} />
             </View>

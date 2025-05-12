@@ -84,7 +84,7 @@ const AppNavigation = () => {
             }}
             >
                 <Stack.Screen name='Login' component={Login} options={{headerShown:false}} />
-                <Stack.Screen name='Signup' component={Signup} />
+                <Stack.Screen name='Signup' component={Signup} options={{headerShown:false}} />
                 <Stack.Screen name='Home' component={Home} options={{headerShown:false}} />
                 <Stack.Screen name='Chat' component={Chat} options={{headerShown:false}} />
                 <Stack.Screen name='AllChats' component={AllChats}/>
