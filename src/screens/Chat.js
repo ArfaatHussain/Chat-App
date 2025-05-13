@@ -4,10 +4,10 @@ import { Search, Trash2, Bell, ArrowLeft, Phone, Video } from 'lucide-react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 // import Swipeable from 'react-native-gesture-handler/Swipeable';
 import ChatStructure from '../components/ChatStructure';
-const Chat = ({navigation,route}) => {
+const Chat = ({ navigation, route }) => {
 
-    const {receiverData, currentUser} = route.params;
-   
+    const { receiverData, currentUser } = route.params;
+
 
     return (
         <View style={{ flex: 1, backgroundColor: 'black' }}>
@@ -15,7 +15,9 @@ const Chat = ({navigation,route}) => {
             <View
                 style={styles.header}
             >
-                <TouchableOpacity>
+                <TouchableOpacity
+                    onPress={() => navigation.goBack()}
+                >
                     <ArrowLeft size={30} color='white' />
                 </TouchableOpacity>
 
@@ -23,35 +25,15 @@ const Chat = ({navigation,route}) => {
                 <View
                     style={styles.middleHeader}
                 >
-                    <Image source={{uri: receiverData.image}} style={styles.headerImg} />
-                    <View
-                        style={{ marginLeft: 15 }}
-                    >
-                        <Text style={{ color: 'white', fontWeight: '600', fontSize: 18 }} >{receiverData.name}</Text>
-                        <Text style={{ color: 'grey', fontWeight: '600', fontSize: 13 }}  >Active Now</Text>
-                    </View>
-                </View>
+                    <Image source={{ uri: receiverData.image }} style={styles.headerImg} />
+                    <Text style={{ color: 'white', fontWeight: '600', fontSize: 18, marginLeft:10 }} >{receiverData.name}</Text>
 
-                <View
-                    style={{ flexDirection: 'row', alignItems: 'center' }}
-                >
-                    <TouchableOpacity
-                        style={{ marginLeft: 20 }}
-                    >
-                        <Phone size={25} color={'white'} />
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={{ marginLeft: 25, marginRight: 5 }}
-                    >
-                        <Video size={25} color={'white'} />
-                    </TouchableOpacity>
                 </View>
             </View>
 
             {/* Chat Structure  */}
 
-            <ChatStructure receiverData = {receiverData} navigation={navigation} currentUser={currentUser} />
+            <ChatStructure receiverData={receiverData} navigation={navigation} currentUser={currentUser} />
 
         </View>
     )
@@ -83,6 +65,7 @@ const styles = StyleSheet.create({
         // borderColor:'red',
         // borderWidth:1,
         flexDirection: 'row',
+        alignItems:'center'
         // alignItems:'center'
     }
 

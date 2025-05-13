@@ -2,17 +2,15 @@ import React, { useState, useCallback, useRef } from 'react';
 import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
 import { GiftedChat, InputToolbar, Send, Bubble } from 'react-native-gifted-chat';
 import Icon from 'react-native-vector-icons/Feather';
-import * as ImagePicker from 'expo-image-picker';
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db } from '../../config';
 import { ref, set, push, onChildAdded, off, update, get } from 'firebase/database';
 import uuid from 'react-native-uuid';
-import { useFocusEffect } from '@react-navigation/native'; // navigation-aware effect
+import { useFocusEffect } from '@react-navigation/native';
 
 function ChatStructure({ receiverData, currentUser }) {
   const { id: receiverId } = receiverData;
   const [allChat, setAllChat] = useState([]);
-
+  
   const getRoomId = (senderId, receiverId) => {
     const [firstUser, secondUser] = senderId < receiverId
       ? [senderId, receiverId]
@@ -43,42 +41,6 @@ function ChatStructure({ receiverData, currentUser }) {
     setAllChat((previousMessages) => GiftedChat.append(previousMessages, [msgData]));
     sndMsg(msgData);
   }, [currentUser, receiverId]);
-
-  const handleImagePicker = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaType.Images,
-      allowsEditing: false,
-      quality: 1,
-    });
-
-    if (!result.canceled && result.assets?.length > 0) {
-      const imageUri = result.assets[0].uri;
-      const storage = getStorage();
-      const fileRef = storageRef(storage, 'chat_images/' + new Date().toISOString());
-
-      const response = await fetch(imageUri);
-      const blob = await response.blob();
-
-      uploadBytes(fileRef, blob).then((snapshot) => {
-        getDownloadURL(snapshot.ref).then((downloadURL) => {
-          const imageMessage = {
-            _id: uuid.v4(),
-            text: '',
-            createdAt: new Date().toISOString(),
-            user: {
-              _id: currentUser.id,
-              name: currentUser.name,
-              avatar: currentUser.image,
-            },
-            image: downloadURL,
-          };
-          onSend([imageMessage]);
-        });
-      });
-    } else {
-      console.log('User cancelled image picker');
-    }
-  };
 
   const sndMsg = async (msgData) => {
     try {
@@ -166,7 +128,7 @@ function ChatStructure({ receiverData, currentUser }) {
         left: { color: 'black' },
       }}
       renderTime={(timeProps) => (
-        <Text style={styles.timeText}>
+        <Text style={[styles.timeText, { color: props.position === 'left' ? 'green' : '#eee' }]}>
           {new Date(timeProps.currentMessage.createdAt).toLocaleTimeString([], {
             hour: '2-digit',
             minute: '2-digit',
@@ -191,11 +153,6 @@ function ChatStructure({ receiverData, currentUser }) {
           <InputToolbar
             {...props}
             containerStyle={styles.inputToolbar}
-            renderActions={() => (
-              <TouchableOpacity onPress={handleImagePicker} style={styles.imagePicker}>
-                <Icon name="image" size={28} color="white" />
-              </TouchableOpacity>
-            )}
           />
         )}
         renderSend={(props) => (
@@ -217,6 +174,12 @@ function ChatStructure({ receiverData, currentUser }) {
 }
 
 const styles = StyleSheet.create({
+  backButton: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    zIndex: 10,
+  },
   inputToolbar: {
     backgroundColor: 'grey',
     borderTopRightRadius: 25,
@@ -240,15 +203,8 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     fontSize: 16,
   },
-  imagePicker: {
-    marginLeft: 10,
-    position: 'relative',
-    top: -10,
-    left: 5,
-  },
   timeText: {
     fontSize: 10,
-    color: '#eee',
     alignSelf: 'flex-end',
     marginTop: 2,
     paddingRight: 4,
