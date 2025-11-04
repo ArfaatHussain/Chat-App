@@ -13,7 +13,6 @@ import { GlobalStateContext } from './src/context/GlobalStateContext';
 function App() {
   const [user, setUser] = React.useState(null);
   return (
-
     <SafeAreaProvider style={{ flex: 1 }} >
       <KeyboardProvider>
         <GestureHandlerRootView style={{ flex: 1 }} >
