@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TextInput, TouchableOpacity, ScrollView, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { User, Eye, EyeOff } from 'lucide-react-native';
 import Btn from '../components/Btn';
 import { API_URL } from '../Constant';
@@ -7,7 +7,7 @@ import Toast from 'react-native-simple-toast';
 import axios from 'axios';
 import uuid from 'react-native-uuid';
 import TransparentLoader from '../components/TransparentLoader';
-import { getDatabase, ref, get, set } from 'firebase/database';  // Import necessary Firebase functions
+import { getDatabase, ref, get, set } from 'firebase/database';
 import { db } from '../../config';
 
 function Signup(props) {
@@ -104,91 +104,103 @@ function Signup(props) {
   };
 
   return (
-    <View
-      style={styles.container}
-    >
-      <ScrollView contentContainerStyle={styles.contentContainer}>
-        <View style={styles.header}>
-          <Text style={styles.headerText}>Create Account</Text>
-          <Text style={styles.subHeaderText}>
-            Join us today! Sign up with your email and password to get started
-          </Text>
-        </View>
+    <View style={{ flex: 1, backgroundColor: 'black' }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView
+            contentContainerStyle={styles.contentContainer}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.header}>
+              <Text style={styles.headerText}>Create Account</Text>
+              <Text style={styles.subHeaderText}>
+                Join us today! Sign up with your email and password to get started
+              </Text>
+            </View>
 
-        <View style={[styles.inputBox, { marginTop: 25 }]}>
-          <TextInput
-            placeholder="Enter name"
-            value={name}
-            onChangeText={setName}
-            style={styles.input}
-            placeholderTextColor={'grey'}
-          />
-        </View>
+            <View style={[styles.inputBox, { marginTop: 25 }]}>
+              <TextInput
+                placeholder="Enter name"
+                value={name}
+                onChangeText={setName}
+                style={styles.input}
+                placeholderTextColor={'grey'}
+              />
+            </View>
 
-        <View style={[styles.inputBox, { marginTop: 10 }]}>
-          <TextInput
-            placeholder="Enter email"
-            value={email}
-            onChangeText={(text) => setEmail(text)}
-            style={styles.input}
-            placeholderTextColor={'grey'}
-          />
-          <User size={24} color={'grey'} />
-        </View>
+            <View style={[styles.inputBox, { marginTop: 10 }]}>
+              <TextInput
+                placeholder="Enter email"
+                value={email}
+                onChangeText={setEmail}
+                style={styles.input}
+                placeholderTextColor={'grey'}
+              />
+              <User size={24} color={'grey'} />
+            </View>
 
-        <View style={[styles.inputBox, { marginTop: 10 }]}>
-          <TextInput
-            placeholder="Enter password"
-            value={password}
-            onChangeText={(text) => setPassword(text)}
-            secureTextEntry={hidePassword}
-            style={styles.input}
-            placeholderTextColor={'grey'}
-          />
-          <TouchableOpacity onPress={() => setHidePassword(!hidePassword)} style={styles.eyeIcon}>
-            {!hidePassword ? <Eye size={24} color={'grey'} /> : <EyeOff size={24} color={'grey'} />}
-          </TouchableOpacity>
-        </View>
+            <View style={[styles.inputBox, { marginTop: 10 }]}>
+              <TextInput
+                placeholder="Enter password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={hidePassword}
+                style={styles.input}
+                placeholderTextColor={'grey'}
+              />
+              <TouchableOpacity onPress={() => setHidePassword(!hidePassword)}>
+                {hidePassword ? (
+                  <EyeOff size={24} color={'grey'} />
+                ) : (
+                  <Eye size={24} color={'grey'} />
+                )}
+              </TouchableOpacity>
+            </View>
 
-        <View style={[styles.inputBox, { marginTop: 10 }]}>
-          <TextInput
-            placeholder="Confirm password"
-            value={confirmPassword}
-            onChangeText={(text) => setConfirmPassword(text)}
-            secureTextEntry={hideConfirmPassword}
-            style={styles.input}
-            placeholderTextColor={'grey'}
-          />
-          <TouchableOpacity onPress={() => setHideConfirmPassword(!hideConfirmPassword)} style={styles.eyeIcon}>
-            {!hideConfirmPassword ? <Eye size={24} color={'grey'} /> : <EyeOff size={24} color={'grey'} />}
-          </TouchableOpacity>
-        </View>
+            <View style={[styles.inputBox, { marginTop: 10 }]}>
+              <TextInput
+                placeholder="Confirm password"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry={hideConfirmPassword}
+                style={styles.input}
+                placeholderTextColor={'grey'}
+              />
+              <TouchableOpacity onPress={() => setHideConfirmPassword(!hideConfirmPassword)}>
+                {hideConfirmPassword ? (
+                  <EyeOff size={24} color={'grey'} />
+                ) : (
+                  <Eye size={24} color={'grey'} />
+                )}
+              </TouchableOpacity>
+            </View>
 
-        <View style={[styles.inputBox, { marginTop: 10 }]}>
-          <TextInput
-            placeholder="Enter about"
-            value={about}
-            onChangeText={setAbout}
-            style={styles.input}
-            placeholderTextColor={'grey'}
-          />
-        </View>
+            <View style={[styles.inputBox, { marginTop: 10 }]}>
+              <TextInput
+                placeholder="Enter about"
+                value={about}
+                onChangeText={setAbout}
+                style={styles.input}
+                placeholderTextColor={'grey'}
+              />
+            </View>
 
-        <Btn text={'Sign Up'} style={styles.button} onPress={handleSignup} />
+            <Btn text={'Sign Up'} style={styles.button} onPress={handleSignup} />
 
-        <View style={styles.loginLink}>
-          <Text style={styles.loginText}>Already have an account? </Text>
-          <TouchableOpacity onPress={() => props.navigation.navigate('Login')}>
-            <Text style={styles.loginLinkText}>Login</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+            <View style={styles.loginLink}>
+              <Text style={styles.loginText}>Already have an account? </Text>
+              <TouchableOpacity onPress={() => props.navigation.navigate('Login')}>
+                <Text style={styles.loginLinkText}>Login</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
 
-      {
-        showLoader ?
-          <TransparentLoader isVisible={true} message={"Creating Account..."} />
-          : null
-      }
+      {showLoader && <TransparentLoader isVisible={true} message={"Creating Account..."} />}
     </View>
   );
 }
@@ -196,10 +208,6 @@ function Signup(props) {
 export default Signup;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'black',
-  },
   contentContainer: {
     paddingHorizontal: 25,
     paddingVertical: 20,
@@ -234,9 +242,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     height: 60,
-  },
-  eyeIcon: {
-    justifyContent: 'center',
   },
   button: {
     marginVertical: 20,
